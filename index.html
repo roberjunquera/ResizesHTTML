@@ -1,60 +1,1053 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Resizes Dash</title>
-  <link href="https://fonts.googleapis.com/css2?family=Satoshi&display=swap" rel="stylesheet" />
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #0e0e10;
-      font-family: 'Satoshi', sans-serif;
-      color: #ffffff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      text-align: center;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resizes · Discovery Call</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&display=swap');
 
-    .logo {
-      width: 180px;
-      margin-bottom: 2rem;
-    }
+:root {
+  --bg: #05070d;
+  --panel: #0a1018;
+  --card: #0e1624;
+  --card2: #121d2e;
+  --border: #192840;
+  --border2: #1e3050;
+  --cyan: #00d4ff;
+  --cyan-dim: rgba(0,212,255,.12);
+  --blue: #1866ff;
+  --green: #00e090;
+  --green-dim: rgba(0,224,144,.1);
+  --red: #ff3a58;
+  --red-dim: rgba(255,58,88,.1);
+  --yellow: #ffc830;
+  --yellow-dim: rgba(255,200,48,.1);
+  --orange: #ff8020;
+  --purple: #9848ff;
+  --text: #cce0ff;
+  --soft: #6890b8;
+  --muted: #304560;
+  --white: #e8f4ff;
+}
 
-    h1 {
-      font-size: 1.8rem;
-      color: #ffffff;
-      margin-bottom: 0.5rem;
-    }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-    .highlight {
-      color: #35fa99;
-      font-weight: bold;
-    }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
-    .badge {
-      margin-top: 1rem;
-      background: rgba(255, 255, 255, 0.07);
-      padding: 0.5rem 1.2rem;
-      border-radius: 2rem;
-      font-size: 0.85rem;
-      color: #aaa;
-    }
-  </style>
+/* Noise texture overlay */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: .6;
+}
+
+/* Grid */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: linear-gradient(rgba(0,212,255,.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,.015) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  position: relative; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 32px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(5,7,13,.9);
+  backdrop-filter: blur(12px);
+}
+
+.logo {
+  display: flex; align-items: center; gap: 12px;
+}
+
+.logo-mark {
+  width: 32px; height: 32px; border-radius: 6px;
+  background: var(--cyan);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600;
+  color: #000; letter-spacing: -1px;
+  box-shadow: 0 0 20px rgba(0,212,255,.4);
+}
+
+.logo-text {
+  font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+  font-weight: 600; color: var(--white); letter-spacing: 1px;
+}
+
+.logo-sub {
+  font-size: 11px; color: var(--soft); margin-top: 1px;
+}
+
+.header-right {
+  display: flex; align-items: center; gap: 16px;
+}
+
+.step-indicator {
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+  color: var(--soft); letter-spacing: 1px;
+}
+
+.step-indicator span { color: var(--cyan); }
+
+.restart-btn {
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  color: var(--muted); border: 1px solid var(--border);
+  background: transparent; padding: 6px 14px; border-radius: 4px;
+  cursor: pointer; letter-spacing: 1px; text-transform: uppercase;
+  transition: all .2s;
+}
+.restart-btn:hover { color: var(--red); border-color: var(--red); }
+
+/* ── PROGRESS BAR ── */
+.progress-wrap {
+  position: relative; z-index: 9;
+  height: 2px; background: var(--border);
+}
+.progress-bar {
+  height: 100%; background: linear-gradient(90deg, var(--blue), var(--cyan));
+  transition: width .5s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 0 8px rgba(0,212,255,.5);
+}
+
+/* ── MAIN LAYOUT ── */
+.main {
+  position: relative; z-index: 1;
+  flex: 1; display: flex;
+  padding: 32px;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── SIDEBAR: breadcrumb history ── */
+.sidebar {
+  width: 240px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 0;
+}
+
+.sidebar-title {
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+  color: var(--muted); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 12px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.crumb {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 0;
+  border-left: 2px solid var(--border);
+  padding-left: 14px;
+  position: relative;
+}
+
+.crumb::before {
+  content: '';
+  position: absolute; left: -5px; top: 14px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border2);
+  border: 2px solid var(--bg);
+}
+
+.crumb.active { border-left-color: var(--cyan); }
+.crumb.active::before { background: var(--cyan); box-shadow: 0 0 8px rgba(0,212,255,.6); }
+.crumb.done { border-left-color: var(--border2); }
+.crumb.done::before { background: var(--green); }
+
+.crumb-step {
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+  color: var(--muted); letter-spacing: 1px; text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.crumb-label {
+  font-size: 11px; font-weight: 500; color: var(--soft);
+  line-height: 1.3;
+}
+
+.crumb.active .crumb-label { color: var(--white); }
+.crumb.active .crumb-step  { color: var(--cyan); }
+
+.crumb-answer {
+  font-size: 10px; color: var(--cyan); font-style: italic;
+  margin-top: 3px; line-height: 1.3;
+}
+
+/* ── CENTER: question card ── */
+.center {
+  flex: 1;
+  display: flex; flex-direction: column;
+  gap: 20px;
+}
+
+/* ── QUESTION CARD ── */
+.q-card {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+  animation: slideIn .35s cubic-bezier(.4,0,.2,1);
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.q-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--blue), var(--cyan), transparent);
+}
+
+.q-meta {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
+}
+
+.q-step-badge {
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+  color: var(--cyan); background: var(--cyan-dim);
+  border: 1px solid rgba(0,212,255,.2);
+  padding: 3px 10px; border-radius: 3px; letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.q-category {
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+  color: var(--muted); letter-spacing: 1px; text-transform: uppercase;
+}
+
+.q-script-label {
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+  color: var(--blue); letter-spacing: 1px; text-transform: uppercase;
+  margin-bottom: 8px; display: block;
+}
+
+.q-text {
+  font-size: 22px; font-weight: 600; color: var(--white);
+  line-height: 1.4; margin-bottom: 16px;
+  letter-spacing: -0.3px;
+}
+
+.q-hint {
+  font-size: 13px; font-weight: 300; color: var(--soft);
+  font-style: italic; line-height: 1.6;
+  padding: 12px 16px;
+  background: rgba(255,255,255,.02);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.q-hint strong {
+  color: var(--text); font-weight: 500; font-style: normal;
+}
+
+/* ── ANSWERS ── */
+.answers {
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.answer-btn {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 20px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all .2s cubic-bezier(.4,0,.2,1);
+  text-align: left;
+  width: 100%;
+  animation: fadeUp .3s ease both;
+  position: relative; overflow: hidden;
+}
+
+.answer-btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  opacity: 0; transition: opacity .2s;
+}
+
+.answer-btn:hover {
+  border-color: var(--blue);
+  transform: translateX(4px);
+  box-shadow: -4px 0 0 var(--blue), 0 4px 20px rgba(24,102,255,.15);
+}
+
+.answer-btn:hover::before { opacity: .04; }
+
+.answer-btn:nth-child(1){ animation-delay: .05s; }
+.answer-btn:nth-child(2){ animation-delay: .10s; }
+.answer-btn:nth-child(3){ animation-delay: .15s; }
+.answer-btn:nth-child(4){ animation-delay: .20s; }
+.answer-btn:nth-child(5){ animation-delay: .25s; }
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.answer-icon {
+  width: 36px; height: 36px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+  background: var(--border); position: relative; z-index: 1;
+}
+
+.answer-content { position: relative; z-index: 1; flex: 1; }
+
+.answer-main {
+  font-size: 14px; font-weight: 600; color: var(--white);
+  line-height: 1.3; margin-bottom: 2px;
+}
+
+.answer-sub {
+  font-size: 11px; font-weight: 300; color: var(--soft);
+  font-style: italic;
+}
+
+.answer-arrow {
+  font-size: 16px; color: var(--muted);
+  position: relative; z-index: 1;
+  transition: transform .2s, color .2s;
+}
+.answer-btn:hover .answer-arrow { transform: translateX(4px); color: var(--cyan); }
+
+/* Color variants */
+.answer-btn.green:hover  { border-color: var(--green);  box-shadow: -4px 0 0 var(--green),  0 4px 20px rgba(0,224,144,.1); }
+.answer-btn.red:hover    { border-color: var(--red);    box-shadow: -4px 0 0 var(--red),    0 4px 20px rgba(255,58,88,.1); }
+.answer-btn.yellow:hover { border-color: var(--yellow); box-shadow: -4px 0 0 var(--yellow), 0 4px 20px rgba(255,200,48,.1); }
+.answer-btn.orange:hover { border-color: var(--orange); box-shadow: -4px 0 0 var(--orange), 0 4px 20px rgba(255,128,32,.1); }
+.answer-btn.purple:hover { border-color: var(--purple); box-shadow: -4px 0 0 var(--purple), 0 4px 20px rgba(152,72,255,.1); }
+.answer-btn.cyan:hover   { border-color: var(--cyan);   box-shadow: -4px 0 0 var(--cyan),   0 4px 20px rgba(0,212,255,.1); }
+
+/* ── OUTCOME CARD ── */
+.outcome-card {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 32px;
+  animation: slideIn .4s cubic-bezier(.4,0,.2,1);
+  position: relative; overflow: hidden;
+}
+
+.outcome-card.cost     { border-color: rgba(255,200,48,.3);  }
+.outcome-card.cost::before     { background: linear-gradient(90deg, transparent, var(--yellow), transparent); }
+.outcome-card.obs      { border-color: rgba(152,72,255,.3);  }
+.outcome-card.obs::before      { background: linear-gradient(90deg, transparent, var(--purple), transparent); }
+.outcome-card.dev      { border-color: rgba(0,212,255,.3);   }
+.outcome-card.dev::before      { background: linear-gradient(90deg, transparent, var(--cyan),   transparent); }
+.outcome-card.services { border-color: rgba(255,128,32,.3);  }
+.outcome-card.services::before { background: linear-gradient(90deg, transparent, var(--orange), transparent); }
+.outcome-card.migration{ border-color: rgba(0,224,144,.3);   }
+.outcome-card.migration::before{ background: linear-gradient(90deg, transparent, var(--green),  transparent); }
+.outcome-card.discard  { border-color: rgba(255,58,88,.3);   }
+.outcome-card.discard::before  { background: linear-gradient(90deg, transparent, var(--red),    transparent); }
+
+.outcome-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+}
+
+.outcome-badge {
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  letter-spacing: 2px; text-transform: uppercase; padding: 4px 12px;
+  border-radius: 4px; display: inline-block; margin-bottom: 16px;
+}
+
+.outcome-title {
+  font-size: 28px; font-weight: 700; margin-bottom: 8px;
+  letter-spacing: -0.5px; line-height: 1.2;
+}
+
+.outcome-desc {
+  font-size: 14px; font-weight: 300; color: var(--soft);
+  line-height: 1.6; margin-bottom: 24px;
+}
+
+.outcome-items {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;
+}
+
+.outcome-item {
+  font-size: 12px; font-weight: 500;
+  padding: 6px 14px; border-radius: 5px;
+  font-family: 'IBM Plex Mono', monospace; letter-spacing: .5px;
+}
+
+.outcome-script {
+  background: rgba(255,255,255,.03); border: 1px solid var(--border);
+  border-radius: 8px; padding: 16px 20px;
+}
+
+.outcome-script-label {
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+  color: var(--cyan); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 8px; display: block;
+}
+
+.outcome-script-text {
+  font-size: 14px; font-style: italic; color: var(--text);
+  line-height: 1.6; font-weight: 300;
+}
+
+.outcome-actions {
+  display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;
+}
+
+.btn-primary {
+  background: var(--blue); color: #fff;
+  border: none; padding: 12px 24px; border-radius: 6px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .2s;
+  display: flex; align-items: center; gap: 8px;
+}
+.btn-primary:hover { background: var(--cyan); color: #000; transform: translateY(-1px); }
+
+.btn-secondary {
+  background: transparent; color: var(--soft);
+  border: 1px solid var(--border); padding: 12px 24px; border-radius: 6px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all .2s;
+}
+.btn-secondary:hover { border-color: var(--border2); color: var(--text); }
+
+/* ── ICP GAUGE (right panel) ── */
+.right-panel {
+  width: 200px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+.panel-title {
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+  color: var(--muted); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 4px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.signal-item {
+  display: flex; flex-direction: column; gap: 4px;
+}
+
+.signal-label {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: var(--soft);
+}
+
+.signal-label span:last-child {
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+}
+
+.signal-bar-wrap {
+  height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;
+}
+
+.signal-bar {
+  height: 100%; border-radius: 2px;
+  transition: width .6s cubic-bezier(.4,0,.2,1);
+}
+
+.pain-tags {
+  display: flex; flex-direction: column; gap: 6px; margin-top: 4px;
+}
+
+.pain-tag {
+  font-size: 10px; padding: 5px 10px; border-radius: 4px;
+  font-family: 'IBM Plex Mono', monospace; letter-spacing: .5px;
+  opacity: .3; transition: opacity .4s;
+  border: 1px solid transparent;
+}
+
+.pain-tag.active { opacity: 1; }
+</style>
 </head>
 <body>
-  <!-- Replace with actual Resizes logo SVG if available -->
-  <svg class="logo" viewBox="0 0 200 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <text x="0" y="30" fill="#35FA99" font-size="32" font-family="Satoshi, sans-serif" font-weight="bold">
-      resizes
-    </text>
-  </svg>
 
-  <h1>Hello, this website’s been deployed with <span class="highlight">Resizes Dash</span></h1>
-  <div class="badge">Auto-provisioned · Secure · Fast</div>
+<header>
+  <div class="logo">
+    <div class="logo-mark">R/</div>
+    <div>
+      <div class="logo-text">RESIZES</div>
+      <div class="logo-sub">Discovery Call Assistant</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="step-indicator">Paso <span id="stepNum">1</span> de 9</div>
+    <button class="restart-btn" onclick="restart()">↺ Reiniciar</button>
+  </div>
+</header>
+
+<div class="progress-wrap">
+  <div class="progress-bar" id="progressBar" style="width:11%"></div>
+</div>
+
+<div class="main">
+
+  <!-- SIDEBAR: history -->
+  <div class="sidebar">
+    <div class="sidebar-title">Historial de llamada</div>
+    <div id="crumbList"></div>
+  </div>
+
+  <!-- CENTER: question -->
+  <div class="center" id="center"></div>
+
+  <!-- RIGHT: signals -->
+  <div class="right-panel">
+    <div>
+      <div class="panel-title">Señales detectadas</div>
+      <div class="pain-tags">
+        <div class="pain-tag" id="sig-cost" style="background:rgba(255,200,48,.08);border-color:rgba(255,200,48,.2);color:var(--yellow);">💸 Cost Pain</div>
+        <div class="pain-tag" id="sig-obs"  style="background:rgba(152,72,255,.08);border-color:rgba(152,72,255,.2);color:var(--purple);">🚨 Observability Pain</div>
+        <div class="pain-tag" id="sig-dev"  style="background:rgba(0,212,255,.08);border-color:rgba(0,212,255,.2);color:var(--cyan);">🚀 Developer Pain</div>
+        <div class="pain-tag" id="sig-aws"  style="background:rgba(0,224,144,.08);border-color:rgba(0,224,144,.2);color:var(--green);">☁️ En AWS</div>
+        <div class="pain-tag" id="sig-icp"  style="background:rgba(24,102,255,.08);border-color:rgba(24,102,255,.2);color:#7aadff;">✅ ICP Fit</div>
+        <div class="pain-tag" id="sig-nodev" style="background:rgba(255,128,32,.08);border-color:rgba(255,128,32,.2);color:var(--orange);">🌱 Sin equipo dev</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel-title">Encaje ICP</div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div class="signal-item">
+          <div class="signal-label"><span>Stack técnico</span><span id="v-stack">—</span></div>
+          <div class="signal-bar-wrap"><div class="signal-bar" id="b-stack" style="width:0%;background:var(--muted);"></div></div>
+        </div>
+        <div class="signal-item">
+          <div class="signal-label"><span>Cloud</span><span id="v-cloud">—</span></div>
+          <div class="signal-bar-wrap"><div class="signal-bar" id="b-cloud" style="width:0%;background:var(--muted);"></div></div>
+        </div>
+        <div class="signal-item">
+          <div class="signal-label"><span>Deploy</span><span id="v-deploy">—</span></div>
+          <div class="signal-bar-wrap"><div class="signal-bar" id="b-deploy" style="width:0%;background:var(--muted);"></div></div>
+        </div>
+        <div class="signal-item">
+          <div class="signal-label"><span>Urgencia</span><span id="v-urgency">—</span></div>
+          <div class="signal-bar-wrap"><div class="signal-bar" id="b-urgency" style="width:0%;background:var(--muted);"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:8px;">
+      <div class="panel-title">Notas de llamada</div>
+      <textarea id="notes" placeholder="Escribe aquí lo que te cuente el cliente..." style="
+        width:100%; min-height:120px; background:var(--card); border:1px solid var(--border);
+        border-radius:6px; padding:10px; color:var(--text); font-family:'DM Sans',sans-serif;
+        font-size:11px; resize:vertical; outline:none; line-height:1.5;
+      "></textarea>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ──
+const state = {
+  currentStep: 'apertura',
+  history: [],
+  signals: { cost: false, obs: false, dev: false, aws: false, icp: false, nodev: false },
+  icp: { stack: 0, cloud: 0, deploy: 0, urgency: 0 },
+  stepNum: 1,
+};
+
+// ── FLOW DEFINITION ──
+const flow = {
+
+  apertura: {
+    step: '00', category: 'Apertura',
+    label: 'Permiso para hablar',
+    script: '¿Te robo 30 segundos y me dices si tiene sentido seguir?',
+    hint: 'Directo y sin rodeos. <strong>No vendas nada todavía.</strong> Si no tienen tiempo, pide un momento mejor. Nunca argumentes en este punto.',
+    answers: [
+      { id: 'apertura-si',  icon: '✅', main: 'Sí, adelante', sub: 'Tienen tiempo ahora', color: 'green', next: 'contexto' },
+      { id: 'apertura-no',  icon: '📅', main: 'No tengo tiempo ahora', sub: 'Pide un mejor momento', color: 'red', next: 'exit-tiempo' },
+    ]
+  },
+
+  'exit-tiempo': {
+    step: '—', category: 'Salida',
+    label: 'Sin tiempo',
+    script: 'Sin problema, ¿cuándo sería un buen momento para hablar 5 minutos?',
+    hint: 'Agenda otro momento. No insistas ni vendas. El objetivo es solo conseguir la llamada.',
+    answers: [
+      { id: 'exit-agenda', icon: '📆', main: 'Agenda otro momento', sub: 'Fin del flujo de hoy', color: '', next: null, outcome: 'exit' },
+    ]
+  },
+
+  contexto: {
+    step: '01', category: 'Contexto del equipo',
+    label: 'Equipo técnico',
+    script: '¿Quién se encarga hoy de la infraestructura en vuestro equipo y cuánto tiempo os consume eso a la semana?',
+    hint: '<strong>No preguntes si tienen devs.</strong> Deja que te lo cuenten. El "cuánto tiempo" revela la carga operativa real.',
+    answers: [
+      { id: 'ctx-interno',  icon: '👨‍💻', main: 'Equipo técnico interno', sub: 'DevOps propio o developers con infra', color: 'green', next: 'icp-stack',
+        signals: { icp: true }, icp: {} },
+      { id: 'ctx-externo',  icon: '🏢', main: 'Agencia o partner externo', sub: 'Dependencia externa', color: 'yellow', next: 'icp-stack',
+        signals: {}, icp: {} },
+      { id: 'ctx-nadie',   icon: '🌱', main: 'Nadie / no hay equipo técnico', sub: 'Sin capacidad técnica interna', color: 'orange', next: 'services-tipo',
+        signals: { nodev: true }, icp: {} },
+    ]
+  },
+
+  'icp-stack': {
+    step: '02a', category: 'ICP Check · Stack',
+    label: 'Stack técnico',
+    script: '¿Qué tecnologías usáis en vuestra infraestructura hoy? ¿Docker, Kubernetes, alguna herramienta de IaC como Terraform?',
+    hint: 'Escucha si mencionan K8s, Docker, Terraform de forma natural. Si no los mencionan, probablemente no los usan. No sugieras las respuestas.',
+    answers: [
+      { id: 'stack-k8s',    icon: '⚙️', main: 'Docker / Kubernetes / Terraform', sub: 'Stack moderno — ICP fuerte', color: 'green', next: 'icp-cloud',
+        icp: { stack: 100 } },
+      { id: 'stack-parcial',icon: '🔧', main: 'Algo de contenedores, no todo', sub: 'Stack parcial — oportunidad', color: 'yellow', next: 'icp-cloud',
+        icp: { stack: 50 } },
+      { id: 'stack-nada',   icon: '📦', main: 'Stack tradicional / legacy', sub: 'Sin modernizar — baja madurez', color: 'red', next: 'icp-cloud',
+        icp: { stack: 10 } },
+    ]
+  },
+
+  'icp-cloud': {
+    step: '02b', category: 'ICP Check · Cloud',
+    label: 'Proveedor cloud',
+    script: '¿Dónde corre todo hoy? ¿En la nube o tenéis servidores propios?',
+    hint: 'Escucha el proveedor de forma natural. Si dicen AWS directamente, es una señal muy positiva. On-prem puro es señal negativa.',
+    answers: [
+      { id: 'cloud-aws',    icon: '🟠', main: 'AWS', sub: 'ICP perfecto — continuar', color: 'green', next: 'icp-deploy',
+        signals: { aws: true }, icp: { cloud: 100 } },
+      { id: 'cloud-otro',   icon: '☁️', main: 'GCP / Azure / otro cloud', sub: 'Posible migración a AWS', color: 'cyan', next: 'icp-deploy',
+        icp: { cloud: 70 } },
+      { id: 'cloud-hibrido',icon: '🔀', main: 'Híbrido (cloud + on-prem)', sub: 'Oportunidad de migración', color: 'yellow', next: 'icp-deploy',
+        icp: { cloud: 40 } },
+      { id: 'cloud-onprem', icon: '🖥️', main: 'Solo on-prem / servidores físicos', sub: 'Mala señal — evaluar descalificación', color: 'red', next: 'descalificar',
+        icp: { cloud: 0 } },
+    ]
+  },
+
+  'icp-deploy': {
+    step: '02c', category: 'ICP Check · Deploy',
+    label: 'Proceso de deploy',
+    script: '¿Cómo lleváis los despliegues a producción hoy? ¿Tenéis un proceso automatizado o se hace de forma más manual?',
+    hint: 'El "de forma más manual" activa el pain sin que tú lo digas. Si tienen CI/CD sólido son maduros; si es manual hay fricción y urgencia.',
+    answers: [
+      { id: 'deploy-cicd',  icon: '🚀', main: 'CI/CD automatizado', sub: 'Pipeline continuo — equipo maduro', color: 'green', next: 'infra-guerra',
+        icp: { deploy: 80 } },
+      { id: 'deploy-manual',icon: '⚠️', main: 'Releases manuales / scripts', sub: 'Fricción → pain de velocidad', color: 'yellow', next: 'infra-guerra',
+        signals: { dev: true }, icp: { deploy: 40, urgency: 60 } },
+      { id: 'deploy-poco',  icon: '🐢', main: 'Desplegamos muy poco', sub: 'Baja urgencia de deploy', color: 'red', next: 'infra-guerra',
+        icp: { deploy: 10 } },
+    ]
+  },
+
+  descalificar: {
+    step: '—', category: 'Descalificación',
+    label: 'Descalificar lead',
+    script: 'Entiendo, pues en este momento lo que hacemos nosotros encaja mejor con equipos que ya están en cloud. Si en algún momento os planteáis dar ese paso, estaré encantado de hablar.',
+    hint: 'No insistas. Sal con elegancia. Deja la puerta abierta para el futuro.',
+    answers: [
+      { id: 'desc-out', icon: '👋', main: 'Salir — dejar puerta abierta', sub: 'Seguimiento en 6 meses', color: 'red', next: null, outcome: 'exit' },
+    ]
+  },
+
+  'infra-guerra': {
+    step: '03', category: 'Infraestructura',
+    label: 'Qué da más guerra',
+    script: 'De todo lo que gestionáis en cloud, ¿qué es lo que más os está dando guerra últimamente?',
+    hint: '<strong>Deja que hablen.</strong> Esta pregunta abre el pain. No sugieras categorías. Escucha si dicen costes, alertas, deploys, seguridad o complejidad.',
+    answers: [
+      { id: 'guerra-costes', icon: '💸', main: 'Los costes / la factura cloud', sub: 'Pain de gasto — ruta Cost Agent', color: 'yellow', next: 'costes-control',
+        signals: { cost: true }, icp: { urgency: 80 } },
+      { id: 'guerra-alertas',icon: '🚨', main: 'Las alertas e incidentes', sub: 'Pain operativo — ruta Observability', color: 'purple', next: 'pain-profundidad',
+        signals: { obs: true }, icp: { urgency: 90 } },
+      { id: 'guerra-deploys',icon: '🚀', main: 'La velocidad de los deploys', sub: 'Pain de entrega — ruta Developer', color: 'cyan', next: 'pain-profundidad',
+        signals: { dev: true }, icp: { urgency: 85 } },
+      { id: 'guerra-complex',icon: '🕸️', main: 'La complejidad general / mantenimiento', sub: 'Pain de operativa', color: '', next: 'pain-profundidad',
+        signals: { obs: true }, icp: { urgency: 70 } },
+      { id: 'guerra-todo',   icon: '🔥', main: 'Todo a la vez', sub: 'Alta urgencia — múltiples dolores', color: 'red', next: 'costes-control',
+        signals: { cost: true, obs: true, dev: true }, icp: { urgency: 100 } },
+    ]
+  },
+
+  'costes-control': {
+    step: '04', category: 'Control del gasto',
+    label: 'Visibilidad de costes',
+    script: '¿Tenéis control real de lo que gastáis en cloud o vais un poco a ciegas en eso?',
+    hint: 'La expresión "a ciegas" normaliza el dolor. Si dicen "más o menos", pregunta: <strong>"¿Os ha sorprendido alguna factura últimamente?"</strong>',
+    answers: [
+      { id: 'cost-ciegas',   icon: '🕶️', main: 'Vamos bastante a ciegas', sub: 'COST PAIN confirmado', color: 'red', next: 'pain-profundidad',
+        signals: { cost: true }, icp: { urgency: 90 } },
+      { id: 'cost-masmenos', icon: '📊', main: 'Más o menos, no del todo', sub: '→ preguntar por facturas sorpresa', color: 'yellow', next: 'costes-factura',
+        signals: { cost: true } },
+      { id: 'cost-control',  icon: '✅', main: 'Lo tenemos bastante controlado', sub: 'Continuar con otros pains', color: 'green', next: 'pain-profundidad' },
+    ]
+  },
+
+  'costes-factura': {
+    step: '04b', category: 'Control del gasto',
+    label: 'Facturas sorpresa',
+    script: '¿Os ha llegado alguna factura que os haya sorprendido en los últimos meses?',
+    hint: 'Una sola factura sorpresa es suficiente para abrir el pain de costes. Si dicen que sí, profundiza con cuánto y por qué.',
+    answers: [
+      { id: 'factura-si',  icon: '😬', main: 'Sí, nos ha pasado', sub: 'COST PAIN confirmado', color: 'red', next: 'pain-profundidad',
+        signals: { cost: true }, icp: { urgency: 85 } },
+      { id: 'factura-no',  icon: '🙂', main: 'No, no nos ha pasado', sub: 'Continuar con otros pains', color: 'green', next: 'pain-profundidad' },
+    ]
+  },
+
+  'pain-profundidad': {
+    step: '05', category: 'Pain Validation',
+    label: 'Pregunta de profundidad',
+    script: 'Si la persona que lleva la infra coge vacaciones o se va, ¿qué pasa en vuestro equipo?',
+    hint: 'Esta pregunta sobre dependencia genera una pausa reveladora. El silencio o la risa incómoda es la respuesta más honesta. Revela riesgo de concentración.',
+    answers: [
+      { id: 'dep-problema', icon: '😰', main: 'Sería un problema serio', sub: 'Alta dependencia → riesgo crítico', color: 'red', next: 'pregunta-clave',
+        icp: { urgency: 95 } },
+      { id: 'dep-cubierto', icon: '🤝', main: 'Tenemos algo cubierto pero justos', sub: 'Dependencia moderada', color: 'yellow', next: 'pregunta-clave',
+        icp: { urgency: 70 } },
+      { id: 'dep-bien',     icon: '✅', main: 'Estamos bien cubiertos', sub: 'Equipo sólido', color: 'green', next: 'pregunta-clave' },
+    ]
+  },
+
+  'pregunta-clave': {
+    step: '06', category: 'Pain Principal',
+    label: 'La pregunta clave',
+    script: 'Si mañana pudieras eliminar un problema de tu equipo de ingeniería, ¿cuál sería y cuánto os está costando no haberlo resuelto?',
+    hint: '<strong>Haz silencio después de preguntar.</strong> No sugieras opciones. Esta respuesta define exactamente qué agente mostrar en la demo.',
+    answers: [
+      { id: 'key-costes', icon: '💸', main: '"Los costes cloud / no sé dónde va el dinero"', sub: '→ Demo: Cost Agent', color: 'yellow', next: 'historia',
+        signals: { cost: true }, icp: { urgency: 90 }, outcome_hint: 'cost' },
+      { id: 'key-alertas', icon: '🚨', main: '"Las alertas, los incidentes, las guardias"', sub: '→ Demo: Observability Agent', color: 'purple', next: 'historia',
+        signals: { obs: true }, icp: { urgency: 90 }, outcome_hint: 'obs' },
+      { id: 'key-deploys', icon: '🚀', main: '"Los deploys lentos / miedo a romper prod"', sub: '→ Demo: Developer Agent', color: 'cyan', next: 'historia',
+        signals: { dev: true }, icp: { urgency: 90 }, outcome_hint: 'dev' },
+      { id: 'key-seguridad', icon: '🔒', main: '"La seguridad / no sé si estamos expuestos"', sub: '→ Demo: Platform completa', color: '', next: 'historia',
+        icp: { urgency: 85 }, outcome_hint: 'obs' },
+      { id: 'key-otro', icon: '💬', main: 'Otro problema / complejidad general', sub: '→ Evaluar ruta custom', color: '', next: 'historia',
+        outcome_hint: 'dev' },
+    ]
+  },
+
+  historia: {
+    step: '07', category: 'Historia Real',
+    label: 'Ejemplo concreto',
+    script: '¿Ha habido algún caso reciente donde eso os haya dolido de verdad? ¿Algo que recuerdes de los últimos 2–3 meses?',
+    hint: 'Busca una historia concreta: un incidente, una factura, una noche de guardia. Esa historia es el <strong>gancho para abrir la demo</strong>.',
+    answers: [
+      { id: 'hist-si',  icon: '📖', main: 'Sí, me viene un caso concreto', sub: 'Guardar para abrir la demo con esa historia', color: 'green', next: 'cierre' },
+      { id: 'hist-no',  icon: '🤔', main: 'No recuerdo nada concreto', sub: 'Ampliar con: ¿algo que haya generado tensión?', color: 'yellow', next: 'historia-tension' },
+    ]
+  },
+
+  'historia-tension': {
+    step: '07b', category: 'Historia Real',
+    label: 'Tensión en el equipo',
+    script: '¿O alguna situación que haya generado tensión en el equipo, con producto, o con dirección?',
+    hint: 'La tensión entre equipos es un pain igual de válido. No hace falta que haya habido un incidente técnico; la fricción humana también cuenta.',
+    answers: [
+      { id: 'tens-si',  icon: '😤', main: 'Sí, ha habido tensiones por eso', sub: 'Dolor confirmado — continuar a cierre', color: 'red', next: 'cierre',
+        icp: { urgency: 85 } },
+      { id: 'tens-no',  icon: '😐', main: 'La verdad es que no mucho', sub: 'Urgencia baja — ir a cierre igualmente', color: '', next: 'cierre' },
+    ]
+  },
+
+  cierre: {
+    step: '09', category: 'Cierre',
+    label: 'Agendar demo',
+    script: 'Por lo que me cuentas sobre [pain detectado], tiene bastante encaje con lo que hacemos. Te enseño en 30 minutos cómo lo resolvemos. ¿Te encaja mejor mañana o pasado?',
+    hint: '<strong>No preguntes si quieren la demo. Pregunta cuándo.</strong> Dos opciones concretas, no una pregunta abierta.',
+    answers: [
+      { id: 'cierre-si',    icon: '📅', main: 'Acepta — agenda la demo', sub: '→ Enviar invite + confirmar asistentes', color: 'green', next: null, outcome: 'demo' },
+      { id: 'cierre-duda',  icon: '🤔', main: 'Tiene dudas', sub: '→ Preguntar: ¿qué te genera dudas?', color: 'yellow', next: 'cierre-duda-q' },
+      { id: 'cierre-no',    icon: '👋', main: 'Rechaza', sub: '→ Dejar puerta abierta + follow up 30 días', color: 'red', next: null, outcome: 'followup' },
+    ]
+  },
+
+  'cierre-duda-q': {
+    step: '09b', category: 'Cierre',
+    label: 'Gestionar objeción',
+    script: '¿Qué es lo que te genera dudas? ¿Es el timing, o hay algo del encaje que no ves claro?',
+    hint: 'Escucha la objeción real. No ataques. Reformula el valor según lo que te digan.',
+    answers: [
+      { id: 'obj-timing',  icon: '🗓️', main: 'Timing — ahora no es el momento', sub: 'Agendar en 4–6 semanas', color: 'yellow', next: null, outcome: 'followup' },
+      { id: 'obj-encaje',  icon: '🎯', main: 'No ve el encaje claro', sub: 'Reformular con su pain específico y reintentar', color: 'red', next: null, outcome: 'followup' },
+      { id: 'obj-convence',icon: '✅', main: 'Se convence — agenda la demo', sub: '→ Confirmar día y hora', color: 'green', next: null, outcome: 'demo' },
+    ]
+  },
+
+  'services-tipo': {
+    step: 'A', category: 'Rama: Professional Services',
+    label: 'Tipo de solución',
+    script: 'Si tuvieras que describir el producto o solución digital que necesitáis construir en los próximos meses, ¿qué sería y qué problema de negocio resuelve?',
+    hint: 'Deja que describan su visión. Escucha si es SaaS, ecommerce, herramienta interna o automatización con IA.',
+    answers: [
+      { id: 'svc-saas',    icon: '🛍️', main: 'Plataforma SaaS', sub: '→ Build SaaS via Professional Services', color: 'orange', next: null, outcome: 'services' },
+      { id: 'svc-ecom',    icon: '🛒', main: 'Ecommerce', sub: '→ Build Ecommerce via Professional Services', color: 'orange', next: null, outcome: 'services' },
+      { id: 'svc-internal',icon: '🔧', main: 'Herramienta interna / automatización', sub: '→ Build Internal Tool + Automate Operations', color: 'orange', next: null, outcome: 'services' },
+      { id: 'svc-ai',      icon: '🤖', main: 'Agentes de IA para el negocio', sub: '→ AI Agents for Business Workflows', color: 'purple', next: null, outcome: 'services' },
+      { id: 'svc-custom',  icon: '⚙️', main: 'Algo custom / difícil de definir', sub: '→ Custom Solution Design', color: '', next: null, outcome: 'services' },
+    ]
+  },
+
+};
+
+// ── OUTCOMES ──
+const outcomes = {
+  demo: {
+    type: 'dev', badge: '🎯 Demo agendada',
+    badgeStyle: 'background:rgba(0,224,144,.1);border:1px solid rgba(0,224,144,.3);color:var(--green)',
+    title: '¡Demo confirmada!',
+    desc: 'Tienes todo lo que necesitas. Usa la historia concreta que te han contado para abrir la demo.',
+    items: ['Enviar invite de calendario', 'Confirmar asistentes clave', 'Personalizar demo según pain detectado', 'Preparar caso de uso similar'],
+    itemStyle: 'background:rgba(0,224,144,.08);border:1px solid rgba(0,224,144,.2);color:var(--green)',
+    script: 'Perfecto, te envío el invite ahora mismo. ¿Quién más debería estar en esa llamada de vuestro lado — el CTO, algún DevOps?',
+  },
+  followup: {
+    type: 'discard', badge: '📋 Follow up',
+    badgeStyle: 'background:rgba(255,200,48,.1);border:1px solid rgba(255,200,48,.3);color:var(--yellow)',
+    title: 'Seguimiento en 30 días',
+    desc: 'No ha sido el momento adecuado. Déjalo marcado para seguimiento con contexto del pain que has detectado.',
+    items: ['CRM: marcar pain detectado', 'Añadir a secuencia de nurturing', 'Follow up call en 30 días', 'Enviar caso de estudio relevante'],
+    itemStyle: 'background:rgba(255,200,48,.08);border:1px solid rgba(255,200,48,.2);color:var(--yellow)',
+    script: 'Perfecto, sin problema. Te mando algo que puede ser útil mientras tanto y hablamos en unas semanas cuando el momento sea mejor.',
+  },
+  exit: {
+    type: 'discard', badge: '🚫 Lead descartado',
+    badgeStyle: 'background:rgba(255,58,88,.1);border:1px solid rgba(255,58,88,.3);color:var(--red)',
+    title: 'Lead descalificado',
+    desc: 'El encaje no es suficiente en este momento. Salir con elegancia y dejar la puerta abierta.',
+    items: ['No encaja ICP actual', 'Sin cloud / on-prem puro', 'Marcar para revisión en 6 meses'],
+    itemStyle: 'background:rgba(255,58,88,.08);border:1px solid rgba(255,58,88,.2);color:var(--red)',
+    script: 'Entiendo, pues en este momento lo que hacemos encaja mejor con equipos ya en cloud. Si algún día os planteáis dar ese paso, estaré encantado de hablar.',
+  },
+  services: {
+    type: 'services', badge: '🌱 Professional Services',
+    badgeStyle: 'background:rgba(255,128,32,.1);border:1px solid rgba(255,128,32,.3);color:var(--orange)',
+    title: 'Ruta: Professional Services',
+    desc: 'Sin equipo técnico interno. La venta es de construcción y automatización via servicios profesionales.',
+    items: ['Build SaaS / Ecommerce / Internal Tool', 'AI Agents for Business Workflows', 'Custom Solution Design', 'Continuar con Golden Path AWS'],
+    itemStyle: 'background:rgba(255,128,32,.08);border:1px solid rgba(255,128,32,.2);color:var(--orange)',
+    script: 'Perfecto, eso es exactamente lo que hacemos. Tenemos un equipo que podría construir eso por vosotros y además montarlo sobre la infraestructura correcta desde el principio. ¿Cuándo podríamos vernos para ver el detalle?',
+  },
+};
+
+// Pain-specific outcome injection
+function getPainOutcome(signals) {
+  if (signals.obs) return {
+    type: 'obs', badge: '🚨 Demo: Observability Agent',
+    badgeStyle: 'background:rgba(152,72,255,.1);border:1px solid rgba(152,72,255,.3);color:var(--purple)',
+    title: 'Ruta: Observability Agent',
+    desc: 'Pain principal detectado: alertas, incidentes y fatiga operativa. La demo debe mostrar cómo se reduce el ruido y se gestionan incidentes automáticamente.',
+    items: ['Alert fatigue reduction', 'Incident root cause automation', 'On-call burden elimination', 'Resizes Platform'],
+    itemStyle: 'background:rgba(152,72,255,.08);border:1px solid rgba(152,72,255,.2);color:var(--purple)',
+    script: 'Por lo que me cuentas, parece que vuestro equipo está pagando un precio alto en tiempo y energía gestionando alertas e incidentes. En 30 minutos os muestro cómo nuestro Observability Agent reduce ese ruido en más de un 70%. ¿Te encaja mañana o pasado?',
+  };
+  if (signals.cost) return {
+    type: 'cost', badge: '💸 Demo: Cost Agent',
+    badgeStyle: 'background:rgba(255,200,48,.1);border:1px solid rgba(255,200,48,.3);color:var(--yellow)',
+    title: 'Ruta: Cost Agent',
+    desc: 'Pain principal detectado: gasto cloud sin control o visibilidad. La demo debe mostrar ahorro concreto y visibilidad en tiempo real.',
+    items: ['Cloud cost visibility', 'AWS Discounts + Reserved Instances', 'Right-sizing automático', 'Resizes Platform'],
+    itemStyle: 'background:rgba(255,200,48,.08);border:1px solid rgba(255,200,48,.2);color:var(--yellow)',
+    script: 'Por lo que me cuentas, hay una oportunidad real de recuperar entre un 20 y un 40% de lo que pagáis en AWS sin tocar nada de la arquitectura. En 30 minutos os lo enseño en vivo. ¿Te encaja mañana o pasado?',
+  };
+  if (signals.dev) return {
+    type: 'dev', badge: '🚀 Demo: Developer Agent',
+    badgeStyle: 'background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:var(--cyan)',
+    title: 'Ruta: Developer Agent',
+    desc: 'Pain principal detectado: deploys lentos o con miedo a romper producción. La demo debe mostrar aceleración del ciclo de entrega.',
+    items: ['Deploy pipeline automation', 'Pre-prod risk detection', 'Kubernetes analysis', 'Resizes Platform'],
+    itemStyle: 'background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);color:var(--cyan)',
+    script: 'Por lo que me cuentas, parece que los deploys os están costando más tiempo y confianza de lo que deberían. En 30 minutos os muestro cómo acelerar ese ciclo y reducir el riesgo de romper prod. ¿Te encaja mañana o pasado?',
+  };
+  return outcomes.demo;
+}
+
+// ── RENDER ──
+function render(stepId) {
+  const step = flow[stepId];
+  if (!step) return;
+  state.currentStep = stepId;
+
+  // Progress
+  const stepOrder = ['apertura','contexto','icp-stack','icp-cloud','icp-deploy','infra-guerra','costes-control','pain-profundidad','pregunta-clave','historia','cierre'];
+  const idx = stepOrder.indexOf(stepId);
+  const pct = idx < 0 ? 90 : Math.round(((idx + 1) / stepOrder.length) * 100);
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('stepNum').textContent = step.step;
+
+  // Center
+  const center = document.getElementById('center');
+  center.innerHTML = `
+    <div class="q-card">
+      <div class="q-meta">
+        <span class="q-step-badge">paso ${step.step}</span>
+        <span class="q-category">${step.category}</span>
+      </div>
+      <span class="q-script-label">// di esto</span>
+      <div class="q-text">"${step.script}"</div>
+      <div class="q-hint">${step.hint}</div>
+    </div>
+    <div class="answers" id="answers"></div>
+  `;
+
+  const answersEl = document.getElementById('answers');
+  step.answers.forEach(ans => {
+    const btn = document.createElement('button');
+    btn.className = `answer-btn ${ans.color}`;
+    btn.innerHTML = `
+      <div class="answer-icon">${ans.icon}</div>
+      <div class="answer-content">
+        <div class="answer-main">${ans.main}</div>
+        ${ans.sub ? `<div class="answer-sub">${ans.sub}</div>` : ''}
+      </div>
+      <div class="answer-arrow">→</div>
+    `;
+    btn.onclick = () => selectAnswer(stepId, ans);
+    answersEl.appendChild(btn);
+  });
+
+  updateCrumbs(stepId, step);
+}
+
+function selectAnswer(stepId, ans) {
+  const step = flow[stepId];
+
+  // Record history
+  state.history.push({ stepId, step, answer: ans });
+
+  // Apply signals
+  if (ans.signals) Object.keys(ans.signals).forEach(k => { if (ans.signals[k]) state.signals[k] = true; });
+
+  // Apply ICP scores
+  if (ans.icp) Object.keys(ans.icp).forEach(k => { if (ans.icp[k] !== undefined) state.icp[k] = ans.icp[k]; });
+
+  updateSignals();
+  updateICP();
+  updateCrumbs(stepId, step, ans);
+
+  // Navigate
+  if (ans.outcome) {
+    showOutcome(ans.outcome);
+  } else if (ans.next) {
+    render(ans.next);
+  } else if (ans.outcome_hint) {
+    showSmartOutcome();
+  } else {
+    showSmartOutcome();
+  }
+}
+
+function showOutcome(outcomeId) {
+  let data = outcomeId === 'demo' ? getPainOutcome(state.signals) : outcomes[outcomeId];
+  if (!data) data = outcomes[outcomeId] || outcomes.demo;
+  renderOutcome(data);
+}
+
+function showSmartOutcome() {
+  renderOutcome(getPainOutcome(state.signals));
+}
+
+function renderOutcome(data) {
+  document.getElementById('progressBar').style.width = '100%';
+  document.getElementById('stepNum').textContent = '✓';
+
+  const center = document.getElementById('center');
+  center.innerHTML = `
+    <div class="outcome-card ${data.type}">
+      <span class="outcome-badge" style="${data.badgeStyle}">${data.badge}</span>
+      <div class="outcome-title">${data.title}</div>
+      <div class="outcome-desc">${data.desc}</div>
+      <div class="outcome-items">
+        ${data.items.map(i => `<span class="outcome-item" style="${data.itemStyle}">${i}</span>`).join('')}
+      </div>
+      <div class="outcome-script">
+        <span class="outcome-script-label">// script de cierre</span>
+        <div class="outcome-script-text">"${data.script}"</div>
+      </div>
+      <div class="outcome-actions">
+        <button class="btn-primary" onclick="restart()">↺ Nueva llamada</button>
+        <button class="btn-secondary" onclick="window.print()">🖨 Imprimir resumen</button>
+      </div>
+    </div>
+  `;
+}
+
+function updateSignals() {
+  Object.keys(state.signals).forEach(k => {
+    const el = document.getElementById('sig-' + k);
+    if (el) el.classList.toggle('active', state.signals[k]);
+  });
+}
+
+function updateICP() {
+  const map = { stack: 'stack', cloud: 'cloud', deploy: 'deploy', urgency: 'urgency' };
+  Object.keys(map).forEach(k => {
+    const val = state.icp[k] || 0;
+    const bar = document.getElementById('b-' + map[k]);
+    const valEl = document.getElementById('v-' + map[k]);
+    if (bar) {
+      bar.style.width = val + '%';
+      bar.style.background = val >= 70 ? 'var(--green)' : val >= 40 ? 'var(--yellow)' : val > 0 ? 'var(--red)' : 'var(--muted)';
+    }
+    if (valEl) valEl.textContent = val > 0 ? (val >= 70 ? '↑ alto' : val >= 40 ? '~ medio' : '↓ bajo') : '—';
+  });
+}
+
+function updateCrumbs(currentId, currentStep, selectedAns) {
+  const crumbList = document.getElementById('crumbList');
+  crumbList.innerHTML = '';
+
+  state.history.forEach(h => {
+    const div = document.createElement('div');
+    div.className = 'crumb done';
+    div.innerHTML = `
+      <div>
+        <div class="crumb-step">${h.step.step}</div>
+        <div class="crumb-label">${h.step.label}</div>
+        <div class="crumb-answer">"${h.answer.main}"</div>
+      </div>
+    `;
+    crumbList.appendChild(div);
+  });
+
+  const active = document.createElement('div');
+  active.className = 'crumb active';
+  active.innerHTML = `
+    <div>
+      <div class="crumb-step">${currentStep.step}</div>
+      <div class="crumb-label">${currentStep.label}</div>
+    </div>
+  `;
+  crumbList.appendChild(active);
+}
+
+function restart() {
+  state.currentStep = 'apertura';
+  state.history = [];
+  state.signals = { cost: false, obs: false, dev: false, aws: false, icp: false, nodev: false };
+  state.icp = { stack: 0, cloud: 0, deploy: 0, urgency: 0 };
+  state.stepNum = 1;
+  updateSignals();
+  updateICP();
+  document.getElementById('crumbList').innerHTML = '';
+  document.getElementById('notes').value = '';
+  render('apertura');
+}
+
+// ── INIT ──
+render('apertura');
+</script>
 </body>
 </html>
