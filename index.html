@@ -3,788 +3,605 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Resizes · Discovery Call</title>
+<title>Resizes · Navegador de llamada en frío</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&display=swap');
+  :root {
+    --ink: #11161F;
+    --ink-soft: #3A4452;
+    --mute: #707C8C;
+    --line: #E4E7EC;
+    --paper: #FBFBF9;
+    --panel: #FFFFFF;
+    --green: #1D9E75; --green-bg: #ECF8F3; --green-d: #0C6B4D;
+    --blue: #2C7BE5; --blue-bg: #EAF2FD; --blue-d: #1A559F;
+    --amber: #C77D17; --amber-bg: #FDF4E7; --amber-d: #8A5409;
+    --purple: #6B4FD8; --purple-bg: #F0EDFB; --purple-d: #463399;
+    --red: #D2453F; --red-bg: #FBEBEA; --red-d: #962925;
+    --teal: #0E8C97; --teal-bg: #E6F5F6; --teal-d: #0A636B;
+    --shadow: 0 1px 2px rgba(17,22,31,.04), 0 6px 20px rgba(17,22,31,.07);
+    --shadow-lg: 0 8px 40px rgba(17,22,31,.13);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.5;
+    min-height: 100vh;
+    background-image: radial-gradient(circle at 1px 1px, rgba(17,22,31,.035) 1px, transparent 0);
+    background-size: 22px 22px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 22px 18px 120px; }
 
-:root {
-  --bg:#05070d; --panel:#0a1018; --card:#0e1624; --card2:#121d2e;
-  --border:#192840; --border2:#1e3050;
-  --cyan:#00d4ff; --cyan-dim:rgba(0,212,255,.12);
-  --blue:#1866ff; --green:#00e090;
-  --red:#ff3a58; --yellow:#ffc830; --orange:#ff8020; --purple:#9848ff;
-  --text:#cce0ff; --soft:#6890b8; --muted:#304560; --white:#e8f4ff;
-}
+  /* Header */
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .brand { display: flex; align-items: baseline; gap: 9px; }
+  .brand .logo { font-weight: 800; font-size: 19px; letter-spacing: -.02em; color: var(--ink); }
+  .brand .logo .dot { color: var(--green); }
+  .brand .tag { font-size: 11px; color: var(--mute); font-weight: 500; letter-spacing: .02em; text-transform: uppercase; }
+  .reset { font-size: 12px; color: var(--mute); background: none; border: 1px solid var(--line); padding: 6px 12px; border-radius: 8px; cursor: pointer; font-family: inherit; transition: all .15s; font-weight: 500; }
+  .reset:hover { color: var(--ink); border-color: var(--mute); }
 
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  /* Progress rail */
+  .rail { display: flex; gap: 5px; margin: 16px 0 22px; }
+  .rail .seg { flex: 1; height: 3px; border-radius: 3px; background: var(--line); transition: background .4s, transform .4s; transform-origin: left; }
+  .rail .seg.done { background: var(--green); }
+  .rail .seg.active { background: var(--ink); }
 
-body{
-  background:var(--bg);color:var(--text);
-  font-family:'DM Sans',sans-serif;min-height:100vh;
-  display:flex;flex-direction:column;
-}
+  /* Breadcrumb of the conversation so far */
+  .trail { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+  .trail .crumb {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 13px; color: var(--ink-soft);
+    animation: slideIn .35s ease both;
+  }
+  .trail .crumb .chip {
+    flex-shrink: 0; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    padding: 3px 8px; border-radius: 6px; margin-top: 1px;
+  }
+  .trail .crumb .said { color: var(--mute); }
+  .trail .crumb .said b { color: var(--ink); font-weight: 600; }
 
-body::before{
-  content:'';position:fixed;inset:0;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-  pointer-events:none;z-index:0;opacity:.6;
-}
-body::after{
-  content:'';position:fixed;inset:0;
-  background-image:linear-gradient(rgba(0,212,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.015) 1px,transparent 1px);
-  background-size:40px 40px;pointer-events:none;z-index:0;
-}
+  /* Main card */
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+    box-shadow: var(--shadow); overflow: hidden;
+    animation: pop .4s cubic-bezier(.2,.9,.3,1.2) both;
+  }
+  .card .top { padding: 7px 22px; display: flex; align-items: center; gap: 9px; border-bottom: 1px solid var(--line); }
+  .card .top .phase-no { font-size: 11px; font-weight: 800; color: #fff; width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; }
+  .card .top .phase-name { font-size: 12px; font-weight: 600; letter-spacing: .01em; }
+  .card .top .phase-meta { font-size: 11px; color: var(--mute); margin-left: auto; }
 
-/* HEADER */
-header{
-  position:relative;z-index:10;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:14px 28px;border-bottom:1px solid var(--border);
-  background:rgba(5,7,13,.94);backdrop-filter:blur(12px);flex-shrink:0;
-}
-.logo{display:flex;align-items:center;gap:12px;}
-.logo-mark{
-  width:30px;height:30px;border-radius:6px;background:var(--cyan);
-  display:flex;align-items:center;justify-content:center;
-  font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;
-  color:#000;letter-spacing:-1px;box-shadow:0 0 18px rgba(0,212,255,.4);flex-shrink:0;
-}
-.logo-text{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--white);letter-spacing:1px;}
-.logo-sub{font-size:11px;color:var(--soft);margin-top:1px;}
-.header-right{display:flex;align-items:center;gap:10px;}
-.step-pill{
-  font-family:'IBM Plex Mono',monospace;font-size:10px;
-  background:var(--card2);border:1px solid var(--border2);
-  color:var(--soft);padding:5px 12px;border-radius:20px;
-  white-space:nowrap;
-}
-.step-pill b{color:var(--cyan);}
-.restart-btn{
-  font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);
-  border:1px solid var(--border);background:transparent;padding:5px 12px;
-  border-radius:4px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;
-}
-.restart-btn:hover{color:var(--red);border-color:var(--red);}
+  .card .body { padding: 22px; }
+  .objective { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
 
-/* PROGRESS */
-.prog-wrap{position:relative;z-index:9;height:2px;background:var(--border);flex-shrink:0;}
-.prog-bar{
-  height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));
-  transition:width .5s cubic-bezier(.4,0,.2,1);
-  box-shadow:0 0 8px rgba(0,212,255,.5);
-}
+  /* The line to say */
+  .say {
+    background: var(--ink); color: #fff; border-radius: 14px; padding: 17px 19px;
+    font-size: 16.5px; line-height: 1.5; font-weight: 450; position: relative;
+  }
+  .say::before {
+    content: "DI ESTO"; position: absolute; top: -8px; left: 16px;
+    background: var(--green); color: #fff; font-size: 9px; font-weight: 800; letter-spacing: .08em;
+    padding: 2px 7px; border-radius: 5px;
+  }
+  .say b { font-weight: 700; color: #fff; }
+  .say .hl { background: rgba(255,255,255,.16); padding: 0 4px; border-radius: 4px; }
 
-/* MOBILE HISTORY STRIP */
-.mob-hist{
-  display:none;position:relative;z-index:8;
-  background:var(--panel);border-bottom:1px solid var(--border);
-  overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-shrink:0;
-}
-.mob-hist::-webkit-scrollbar{display:none;}
-.mob-hist-inner{display:flex;align-items:stretch;min-width:max-content;}
-.mcrumb{display:flex;align-items:center;gap:7px;padding:9px 14px;border-right:1px solid var(--border);white-space:nowrap;}
-.mcrumb.done{opacity:.55;}
-.mcrumb.active{background:rgba(0,212,255,.05);}
-.mcdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
-.mcrumb.done .mcdot{background:var(--green);}
-.mcrumb.active .mcdot{background:var(--cyan);animation:dp 2s ease-in-out infinite;}
-@keyframes dp{0%,100%{box-shadow:0 0 4px rgba(0,212,255,.6);}50%{box-shadow:0 0 10px rgba(0,212,255,1);}}
-.mclabel{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--soft);letter-spacing:.5px;}
-.mcrumb.active .mclabel{color:var(--cyan);}
-.mcans{font-size:9px;color:var(--muted);font-style:italic;margin-left:3px;}
+  .prompt-q {
+    font-size: 19px; font-weight: 600; line-height: 1.4; color: var(--ink); letter-spacing: -.01em;
+  }
+  .prompt-q .quote { color: var(--ink); }
+  .sub { font-size: 13.5px; color: var(--mute); margin-top: 9px; }
 
-/* MAIN */
-.main{
-  position:relative;z-index:1;flex:1;
-  display:flex;padding:28px;gap:22px;
-  max-width:1200px;margin:0 auto;width:100%;min-height:0;
-}
+  /* What the lead says — answer buttons */
+  .listen { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); margin: 20px 0 10px; display: flex; align-items: center; gap: 7px; }
+  .listen::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 3px var(--red-bg); animation: pulse 1.6s infinite; }
+  .answers { display: flex; flex-direction: column; gap: 9px; }
+  .ans {
+    text-align: left; width: 100%; cursor: pointer; font-family: inherit;
+    background: var(--panel); border: 1.5px solid var(--line); border-radius: 12px;
+    padding: 13px 15px; transition: all .16s; display: flex; align-items: center; gap: 12px;
+  }
+  .ans:hover { border-color: var(--ink); transform: translateY(-1px); box-shadow: var(--shadow); }
+  .ans:active { transform: translateY(0); }
+  .ans .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .ans .txt { flex: 1; }
+  .ans .txt .label { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .ans .txt .hint { font-size: 12.5px; color: var(--mute); margin-top: 2px; }
+  .ans .arrow { color: var(--mute); font-size: 17px; transition: transform .16s; }
+  .ans:hover .arrow { transform: translateX(3px); color: var(--ink); }
 
-/* SIDEBAR */
-.sidebar{width:210px;flex-shrink:0;display:flex;flex-direction:column;}
-.sidebar-title{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
-.crumb{display:flex;align-items:flex-start;gap:0;padding:9px 0 9px 14px;border-left:2px solid var(--border);position:relative;}
-.crumb::before{content:'';position:absolute;left:-5px;top:13px;width:8px;height:8px;border-radius:50%;background:var(--border2);border:2px solid var(--bg);}
-.crumb.active{border-left-color:var(--cyan);}
-.crumb.active::before{background:var(--cyan);box-shadow:0 0 8px rgba(0,212,255,.6);}
-.crumb.done::before{background:var(--green);}
-.crumb-step{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;}
-.crumb-label{font-size:11px;font-weight:500;color:var(--soft);line-height:1.3;}
-.crumb.active .crumb-label{color:var(--white);}
-.crumb.active .crumb-step{color:var(--cyan);}
-.crumb-answer{font-size:10px;color:var(--cyan);font-style:italic;margin-top:2px;line-height:1.3;}
+  /* Follow-up coaching lines inside card */
+  .coach { margin-top: 16px; border-radius: 12px; padding: 13px 15px; font-size: 13.5px; line-height: 1.5; }
+  .coach .tit { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+  .coach ul { list-style: none; }
+  .coach li { padding-left: 16px; position: relative; margin-bottom: 4px; }
+  .coach li::before { content: "→"; position: absolute; left: 0; font-weight: 700; opacity: .5; }
 
-/* CENTER */
-.center{flex:1;display:flex;flex-direction:column;gap:16px;min-width:0;}
+  /* Outcome / terminal card */
+  .outcome-badge { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 20px; margin-bottom: 14px; }
+  .next-actions { display: flex; flex-direction: column; gap: 9px; margin-top: 8px; }
 
-/* QUESTION CARD */
-.q-card{
-  background:var(--card);border:1px solid var(--border2);border-radius:12px;
-  padding:28px;position:relative;overflow:hidden;
-  animation:sIn .32s cubic-bezier(.4,0,.2,1);
-}
-@keyframes sIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
-.q-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--blue),var(--cyan),transparent);}
-.q-meta{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
-.q-badge{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--cyan);background:var(--cyan-dim);border:1px solid rgba(0,212,255,.2);padding:3px 10px;border-radius:3px;letter-spacing:1.5px;text-transform:uppercase;}
-.q-cat{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+  /* Pill buttons (continue / secondary) */
+  .actions { display: flex; gap: 9px; margin-top: 18px; flex-wrap: wrap; }
+  .btn { font-family: inherit; font-size: 14px; font-weight: 600; padding: 11px 18px; border-radius: 10px; cursor: pointer; border: 1.5px solid var(--line); background: var(--panel); color: var(--ink); transition: all .15s; }
+  .btn:hover { border-color: var(--ink); }
+  .btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .btn.primary:hover { opacity: .9; }
+  .btn.ghost { border-color: transparent; color: var(--mute); }
+  .btn.ghost:hover { color: var(--ink); background: var(--paper); }
 
-/* Script — what to say */
-.say-label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--blue);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:block;}
-.say-text{font-size:20px;font-weight:600;color:var(--white);line-height:1.45;margin-bottom:14px;letter-spacing:-0.2px;}
+  /* Objection floating button + panel */
+  .obj-fab {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--red); color: #fff; border: none; font-family: inherit;
+    font-size: 14px; font-weight: 700; padding: 13px 22px; border-radius: 30px;
+    cursor: pointer; box-shadow: var(--shadow-lg); z-index: 40;
+    display: flex; align-items: center; gap: 9px; transition: transform .15s;
+  }
+  .obj-fab:hover { transform: translateX(-50%) translateY(-2px); }
+  .obj-fab .ico { font-size: 16px; }
 
-/* Response guide */
-.resp-label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:block;}
-.q-hint{font-size:12px;font-weight:300;color:var(--soft);font-style:italic;line-height:1.6;padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:6px;}
-.q-hint strong{color:var(--text);font-weight:500;font-style:normal;}
+  .sheet-bg { position: fixed; inset: 0; background: rgba(17,22,31,.4); z-index: 50; opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .sheet-bg.open { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
+    background: var(--panel); border-radius: 20px 20px 0 0; box-shadow: var(--shadow-lg);
+    max-height: 86vh; overflow-y: auto; transform: translateY(100%); transition: transform .3s cubic-bezier(.2,.8,.3,1);
+    max-width: 760px; margin: 0 auto;
+  }
+  .sheet.open { transform: translateY(0); }
+  .sheet .grab { width: 38px; height: 4px; background: var(--line); border-radius: 4px; margin: 11px auto 4px; }
+  .sheet .sheet-head { padding: 8px 22px 14px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); z-index: 2; }
+  .sheet .sheet-head h2 { font-size: 17px; font-weight: 700; }
+  .sheet .sheet-head p { font-size: 12.5px; color: var(--mute); margin-top: 2px; }
+  .sheet .sheet-body { padding: 16px 22px 30px; }
+  .obj { border: 1px solid var(--line); border-left: 4px solid var(--mute); border-radius: 12px; padding: 14px 15px; margin-bottom: 11px; }
+  .obj .q { font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 9px; }
+  .obj .r { font-size: 14px; line-height: 1.5; color: var(--ink-soft); background: var(--paper); border-radius: 9px; padding: 11px 13px; }
+  .obj .f { font-size: 12.5px; color: var(--mute); margin-top: 8px; }
+  .obj .f b { color: var(--ink-soft); }
+  .obj-group-tit { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--mute); margin: 14px 0 9px; }
 
-/* ANSWERS */
-.answers{display:flex;flex-direction:column;gap:8px;}
-
-/* RESPONSE LABEL above answers */
-.answers-label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;padding:0 2px;}
-
-.answer-btn{
-  display:flex;align-items:flex-start;gap:12px;padding:14px 18px;
-  background:var(--card2);border:1px solid var(--border);border-radius:8px;
-  cursor:pointer;transition:all .18s cubic-bezier(.4,0,.2,1);
-  text-align:left;width:100%;position:relative;overflow:hidden;
-  animation:fUp .28s ease both;
-}
-.answer-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--blue),var(--cyan));opacity:0;transition:opacity .2s;}
-.answer-btn:hover{border-color:var(--blue);transform:translateX(3px);box-shadow:-3px 0 0 var(--blue),0 4px 18px rgba(24,102,255,.12);}
-.answer-btn:active{transform:scale(.98);}
-.answer-btn:hover::before{opacity:.04;}
-.answer-btn:nth-child(1){animation-delay:.04s}.answer-btn:nth-child(2){animation-delay:.08s}
-.answer-btn:nth-child(3){animation-delay:.12s}.answer-btn:nth-child(4){animation-delay:.16s}
-.answer-btn:nth-child(5){animation-delay:.20s}.answer-btn:nth-child(6){animation-delay:.24s}
-@keyframes fUp{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:translateY(0);}}
-
-.a-icon{width:34px;height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:var(--border);position:relative;z-index:1;margin-top:1px;}
-.a-body{position:relative;z-index:1;flex:1;min-width:0;}
-.a-signal{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;color:var(--muted);}
-.a-main{font-size:13px;font-weight:600;color:var(--white);line-height:1.35;margin-bottom:3px;}
-.a-reply{font-size:11px;font-weight:400;color:var(--soft);font-style:italic;line-height:1.45;}
-.a-redirect{font-size:11px;font-weight:500;color:var(--cyan);margin-top:5px;padding-top:5px;border-top:1px solid var(--border);font-style:italic;}
-.a-arr{font-size:14px;color:var(--muted);position:relative;z-index:1;transition:transform .2s,color .2s;flex-shrink:0;margin-top:2px;}
-.answer-btn:hover .a-arr{transform:translateX(3px);color:var(--cyan);}
-
-.answer-btn.green:hover {border-color:var(--green); box-shadow:-3px 0 0 var(--green),0 4px 18px rgba(0,224,144,.1);}
-.answer-btn.red:hover   {border-color:var(--red);   box-shadow:-3px 0 0 var(--red),0 4px 18px rgba(255,58,88,.1);}
-.answer-btn.yellow:hover{border-color:var(--yellow);box-shadow:-3px 0 0 var(--yellow),0 4px 18px rgba(255,200,48,.1);}
-.answer-btn.orange:hover{border-color:var(--orange);box-shadow:-3px 0 0 var(--orange),0 4px 18px rgba(255,128,32,.1);}
-.answer-btn.purple:hover{border-color:var(--purple);box-shadow:-3px 0 0 var(--purple),0 4px 18px rgba(152,72,255,.1);}
-.answer-btn.cyan:hover  {border-color:var(--cyan);  box-shadow:-3px 0 0 var(--cyan),0 4px 18px rgba(0,212,255,.1);}
-
-/* SKIP button */
-.skip-btn{
-  background:transparent;border:1px dashed var(--border);border-radius:6px;
-  padding:10px 16px;color:var(--muted);font-size:11px;cursor:pointer;
-  transition:all .2s;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:8px;
-}
-.skip-btn:hover{border-color:var(--border2);color:var(--soft);}
-
-/* OUTCOME */
-.outcome-card{
-  background:var(--card);border:1px solid var(--border2);border-radius:12px;
-  padding:28px;animation:sIn .4s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden;
-}
-.outcome-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;}
-.outcome-card.cost::before    {background:linear-gradient(90deg,transparent,var(--yellow),transparent);}
-.outcome-card.obs::before     {background:linear-gradient(90deg,transparent,var(--purple),transparent);}
-.outcome-card.dev::before     {background:linear-gradient(90deg,transparent,var(--cyan),transparent);}
-.outcome-card.services::before{background:linear-gradient(90deg,transparent,var(--orange),transparent);}
-.outcome-card.discard::before {background:linear-gradient(90deg,transparent,var(--red),transparent);}
-.outcome-card.cost    {border-color:rgba(255,200,48,.3);}
-.outcome-card.obs     {border-color:rgba(152,72,255,.3);}
-.outcome-card.dev     {border-color:rgba(0,212,255,.3);}
-.outcome-card.services{border-color:rgba(255,128,32,.3);}
-.outcome-card.discard {border-color:rgba(255,58,88,.3);}
-
-.oc-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;border-radius:4px;display:inline-block;margin-bottom:14px;}
-.oc-title{font-size:26px;font-weight:700;margin-bottom:6px;letter-spacing:-0.5px;line-height:1.2;}
-.oc-desc{font-size:13px;font-weight:300;color:var(--soft);line-height:1.6;margin-bottom:20px;}
-.oc-items{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:20px;}
-.oc-item{font-size:11px;font-weight:500;padding:5px 13px;border-radius:5px;font-family:'IBM Plex Mono',monospace;letter-spacing:.5px;}
-.oc-script{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin-bottom:16px;}
-.oc-script-label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--cyan);letter-spacing:2px;text-transform:uppercase;margin-bottom:7px;display:block;}
-.oc-script-text{font-size:14px;font-style:italic;color:var(--text);line-height:1.6;font-weight:300;}
-.oc-summary{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin-bottom:16px;}
-.oc-summary-title{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;display:block;}
-.oc-summary-row{display:flex;align-items:baseline;gap:8px;margin-bottom:6px;font-size:12px;}
-.oc-summary-row:last-child{margin-bottom:0;}
-.oc-summary-key{color:var(--muted);min-width:100px;font-size:11px;}
-.oc-summary-val{color:var(--text);font-weight:500;}
-.oc-actions{display:flex;gap:10px;flex-wrap:wrap;}
-
-.btn-primary{background:var(--blue);color:#fff;border:none;padding:12px 22px;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;}
-.btn-primary:hover{background:var(--cyan);color:#000;transform:translateY(-1px);}
-.btn-secondary{background:transparent;color:var(--soft);border:1px solid var(--border);padding:12px 22px;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;}
-.btn-secondary:hover{border-color:var(--border2);color:var(--text);}
-.btn-copy{background:rgba(0,212,255,.08);color:var(--cyan);border:1px solid rgba(0,212,255,.25);padding:12px 22px;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;}
-.btn-copy:hover{background:rgba(0,212,255,.15);}
-
-/* RIGHT PANEL */
-.right-panel{width:196px;flex-shrink:0;display:flex;flex-direction:column;gap:14px;}
-.panel-title{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;padding-bottom:7px;border-bottom:1px solid var(--border);}
-.pain-tags{display:flex;flex-direction:column;gap:5px;}
-.pain-tag{font-size:10px;padding:5px 10px;border-radius:4px;font-family:'IBM Plex Mono',monospace;letter-spacing:.5px;opacity:.28;transition:opacity .4s,transform .3s;border:1px solid transparent;}
-.pain-tag.active{opacity:1;transform:translateX(2px);}
-.sig-item{display:flex;flex-direction:column;gap:3px;}
-.sig-row{display:flex;justify-content:space-between;font-size:11px;color:var(--soft);}
-.sig-row span:last-child{font-family:'IBM Plex Mono',monospace;font-size:9px;}
-.sig-bar-wrap{height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
-.sig-bar{height:100%;border-radius:2px;transition:width .6s cubic-bezier(.4,0,.2,1);}
-
-/* NOTES */
-.notes-area{width:100%;min-height:100px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:11px;resize:vertical;outline:none;line-height:1.5;}
-.notes-area:focus{border-color:var(--border2);}
-
-/* BOTTOM SHEET (mobile) */
-.sheet-wrap{display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;}
-.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199;opacity:0;pointer-events:none;transition:opacity .25s;}
-.sheet-bg.vis{opacity:1;pointer-events:all;}
-.sheet-handle{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;background:var(--card);border-top:1px solid var(--border2);cursor:pointer;position:relative;z-index:201;}
-.sheet-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--soft);letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
-.sheet-count{background:var(--cyan-dim);color:var(--cyan);border:1px solid rgba(0,212,255,.25);border-radius:3px;padding:1px 7px;font-size:9px;}
-.sheet-chev{color:var(--muted);font-size:18px;transition:transform .25s;}
-.sheet-chev.open{transform:rotate(180deg);}
-.sheet-body{background:var(--card);border-top:1px solid var(--border);max-height:0;overflow:hidden;transition:max-height .3s cubic-bezier(.4,0,.2,1);position:relative;z-index:201;}
-.sheet-body.open{max-height:70vh;overflow-y:auto;}
-.sheet-inner{padding:16px 20px 36px;display:flex;flex-direction:column;gap:18px;}
-.sheet-pain-tags{display:flex;flex-wrap:wrap;gap:7px;}
-.sheet-icp{display:flex;flex-direction:column;gap:9px;}
-
-/* COPY TOAST */
-.toast{
-  position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);
-  background:var(--green);color:#000;font-family:'IBM Plex Mono',monospace;
-  font-size:11px;font-weight:600;letter-spacing:1px;padding:10px 20px;
-  border-radius:6px;z-index:500;opacity:0;transition:all .3s;pointer-events:none;
-  white-space:nowrap;
-}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-
-/* RESPONSIVE */
-@media(max-width:900px){
-  .sidebar,.right-panel{display:none;}
-  .mob-hist{display:block;}
-  .sheet-wrap{display:block;}
-  .main{padding:16px 16px 80px;gap:0;}
-  header{padding:11px 16px;}
-  .logo-sub{display:none;}
-}
-@media(max-width:600px){
-  .q-card{padding:18px 15px;}
-  .say-text{font-size:17px;}
-  .q-hint{font-size:11.5px;padding:9px 13px;}
-  .answer-btn{padding:13px 14px;gap:10px;}
-  .a-icon{width:30px;height:30px;font-size:13px;}
-  .a-main{font-size:12px;}
-  .a-reply,.a-redirect{font-size:10.5px;}
-  .outcome-card{padding:18px 15px;}
-  .oc-title{font-size:22px;}
-  .oc-actions{flex-direction:column;}
-  .btn-primary,.btn-secondary,.btn-copy{width:100%;justify-content:center;padding:14px 20px;}
-}
+  @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: none; } }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 3px var(--red-bg); } 50% { box-shadow: 0 0 0 5px transparent; } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  @media (max-width: 520px) {
+    .wrap { padding: 16px 13px 120px; }
+    .say { font-size: 15.5px; }
+    .prompt-q { font-size: 17px; }
+    .card .top .phase-meta { display: none; }
+  }
 </style>
 </head>
 <body>
-
-<header>
-  <div class="logo">
-    <div class="logo-mark">R/</div>
-    <div>
-      <div class="logo-text">RESIZES</div>
-      <div class="logo-sub">Discovery Call · Roberto</div>
-    </div>
-  </div>
-  <div class="header-right">
-    <div class="step-pill">Paso <b id="stepNum">0</b> · <span id="stepCat" style="color:var(--soft)">Apertura</span></div>
-    <button class="restart-btn" onclick="restart()">↺ Nueva</button>
-  </div>
-</header>
-
-<div class="prog-wrap"><div class="prog-bar" id="prog" style="width:5%"></div></div>
-
-<!-- MOBILE HISTORY -->
-<div class="mob-hist"><div class="mob-hist-inner" id="mobHist"></div></div>
-
-<div class="main">
-
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="sidebar-title">Historial</div>
-    <div id="crumbs"></div>
-  </div>
-
-  <!-- CENTER -->
-  <div class="center" id="center"></div>
-
-  <!-- RIGHT PANEL -->
-  <div class="right-panel">
-    <div>
-      <div class="panel-title">Señales</div>
-      <div class="pain-tags">
-        <div class="pain-tag" id="sig-cost"  style="background:rgba(255,200,48,.08);border-color:rgba(255,200,48,.2);color:var(--yellow);">💸 Cost Pain</div>
-        <div class="pain-tag" id="sig-obs"   style="background:rgba(152,72,255,.08);border-color:rgba(152,72,255,.2);color:var(--purple);">🚨 Observability</div>
-        <div class="pain-tag" id="sig-dev"   style="background:rgba(0,212,255,.08);border-color:rgba(0,212,255,.2);color:var(--cyan);">🚀 Developer</div>
-        <div class="pain-tag" id="sig-aws"   style="background:rgba(0,224,144,.08);border-color:rgba(0,224,144,.2);color:var(--green);">☁️ AWS</div>
-        <div class="pain-tag" id="sig-dep"   style="background:rgba(255,200,48,.06);border-color:rgba(255,200,48,.15);color:var(--yellow);">⚠️ Dependencia</div>
-        <div class="pain-tag" id="sig-nodev" style="background:rgba(255,128,32,.08);border-color:rgba(255,128,32,.2);color:var(--orange);">🌱 Sin DevOps</div>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <span class="logo">Resizes<span class="dot">.</span></span>
+        <span class="tag">Navegador de llamada</span>
       </div>
-    </div>
-    <div>
-      <div class="panel-title">Encaje ICP</div>
-      <div style="display:flex;flex-direction:column;gap:9px;">
-        <div class="sig-item"><div class="sig-row"><span>Stack</span><span id="vstack">—</span></div><div class="sig-bar-wrap"><div class="sig-bar" id="bstack" style="width:0%;background:var(--muted)"></div></div></div>
-        <div class="sig-item"><div class="sig-row"><span>Cloud</span><span id="vcloud">—</span></div><div class="sig-bar-wrap"><div class="sig-bar" id="bcloud" style="width:0%;background:var(--muted)"></div></div></div>
-        <div class="sig-item"><div class="sig-row"><span>Deploy</span><span id="vdeploy">—</span></div><div class="sig-bar-wrap"><div class="sig-bar" id="bdeploy" style="width:0%;background:var(--muted)"></div></div></div>
-        <div class="sig-item"><div class="sig-row"><span>Urgencia</span><span id="vurgency">—</span></div><div class="sig-bar-wrap"><div class="sig-bar" id="burgency" style="width:0%;background:var(--muted)"></div></div></div>
-      </div>
-    </div>
-    <div>
-      <div class="panel-title">Notas</div>
-      <textarea class="notes-area" id="notes" placeholder="Lo que dice el cliente..."></textarea>
-    </div>
+      <button class="reset" id="resetBtn">Reiniciar</button>
+    </header>
+
+    <div class="rail" id="rail"></div>
+    <div class="trail" id="trail"></div>
+    <div id="stage"></div>
   </div>
 
-</div>
+  <button class="obj-fab" id="objFab"><span class="ico">⚡</span> Me ha puesto una objeción</button>
 
-<!-- BOTTOM SHEET -->
-<div class="sheet-wrap" id="sheetWrap">
-  <div class="sheet-bg" id="sheetBg" onclick="closeSheet()"></div>
-  <div class="sheet-handle" onclick="toggleSheet()">
-    <div class="sheet-label">Señales <span class="sheet-count" id="sheetCount">0</span></div>
-    <div class="sheet-chev" id="sheetChev">⌃</div>
-  </div>
-  <div class="sheet-body" id="sheetBody">
-    <div class="sheet-inner">
-      <div>
-        <div class="panel-title" style="margin-bottom:9px;">Señales detectadas</div>
-        <div class="sheet-pain-tags">
-          <div class="pain-tag" id="msig-cost"  style="background:rgba(255,200,48,.08);border-color:rgba(255,200,48,.2);color:var(--yellow);">💸 Cost Pain</div>
-          <div class="pain-tag" id="msig-obs"   style="background:rgba(152,72,255,.08);border-color:rgba(152,72,255,.2);color:var(--purple);">🚨 Observability</div>
-          <div class="pain-tag" id="msig-dev"   style="background:rgba(0,212,255,.08);border-color:rgba(0,212,255,.2);color:var(--cyan);">🚀 Developer</div>
-          <div class="pain-tag" id="msig-aws"   style="background:rgba(0,224,144,.08);border-color:rgba(0,224,144,.2);color:var(--green);">☁️ AWS</div>
-          <div class="pain-tag" id="msig-dep"   style="background:rgba(255,200,48,.06);border-color:rgba(255,200,48,.15);color:var(--yellow);">⚠️ Dependencia</div>
-          <div class="pain-tag" id="msig-nodev" style="background:rgba(255,128,32,.08);border-color:rgba(255,128,32,.2);color:var(--orange);">🌱 Sin DevOps</div>
-        </div>
-      </div>
-      <div>
-        <div class="panel-title" style="margin-bottom:9px;">ICP</div>
-        <div class="sheet-icp">
-          <div class="sig-item"><div class="sig-row"><span>Stack</span><span id="mvstack">—</span></div><div class="sig-bar-wrap"><div class="sig-bar" id="mbstack" style="width:0%;background:var(--muted)"></div></div></div>
-          <div class="sig-item"><div class="sig-row"><span>Cloud</span><span id="mvcloud">—</span></div><div class="sig-bar-wrap"><div class="sig-bar" id="mbcloud" style="width:0%;background:var(--muted)"></div></div></div>
-          <div class="sig-item"><div class="sig-row"><span>Deploy</span><span id="mvdeploy">—</span></div><div class="sig-bar-wrap"><div class="sig-bar" id="mbdeploy" style="width:0%;background:var(--muted)"></div></div></div>
-          <div class="sig-item"><div class="sig-row"><span>Urgencia</span><span id="mvurgency">—</span></div><div class="sig-bar-wrap"><div class="sig-bar" id="mburgency" style="width:0%;background:var(--muted)"></div></div></div>
-        </div>
-      </div>
-      <div>
-        <div class="panel-title" style="margin-bottom:9px;">Notas</div>
-        <textarea class="notes-area" id="mnotes" placeholder="Lo que dice el cliente..." style="min-height:80px;background:var(--card2);resize:none;"></textarea>
-      </div>
+  <div class="sheet-bg" id="sheetBg"></div>
+  <div class="sheet" id="sheet">
+    <div class="grab"></div>
+    <div class="sheet-head">
+      <h2>Manejo de objeciones</h2>
+      <p>Reconoce → reencuadra hacia el coste de no actuar → devuelve una pregunta. Nunca discutas.</p>
     </div>
+    <div class="sheet-body" id="objBody"></div>
   </div>
-</div>
-
-<!-- TOAST -->
-<div class="toast" id="toast">✓ Resumen copiado</div>
 
 <script>
-// ── STATE ──
-const S = {
-  step:'apertura', history:[],
-  sigs:{cost:false,obs:false,dev:false,aws:false,dep:false,nodev:false},
-  icp:{stack:0,cloud:0,deploy:0,urgency:0},
-};
-let sheetOpen=false;
-
-// ── SHEET ──
-function toggleSheet(){sheetOpen?closeSheet():openSheet();}
-function openSheet(){sheetOpen=true;document.getElementById('sheetBody').classList.add('open');document.getElementById('sheetChev').classList.add('open');document.getElementById('sheetBg').classList.add('vis');}
-function closeSheet(){sheetOpen=false;document.getElementById('sheetBody').classList.remove('open');document.getElementById('sheetChev').classList.remove('open');document.getElementById('sheetBg').classList.remove('vis');}
-
-// ── FLOW ──
-// Each step: { num, cat, label, say, hint, answers: [{signal,main,reply,redirect,color,next,icp,outcome}] }
-// 'reply' = what YOU say back after they answer
-// 'redirect' = how you redirect the conversation
-const FLOW = {
-
-  apertura:{num:'0',cat:'Apertura',label:'Permiso',
-    say:'Hola [nombre], ¿qué tal? Soy Roberto de Resizes. Sé que es llamada en frío — dame 30 segundos y si no te aporta valor, colgamos sin problema. Estamos reduciendo entre un 20% y un 40% el gasto cloud en equipos como el vuestro.',
-    hint:'No vendas nada más. Haz la CTA inicial y calla. <strong>El que habla primero pierde.</strong>',
-    cta:'"Cuéntame cómo estáis gestionando ahora mismo vuestra infraestructura y el gasto cloud en el día a día."',
-    answers:[
-      {icon:'✅',signal:'Sí, adelante / me cuentas',main:'Abren la conversación',reply:'',redirect:'→ ir a contexto del equipo',color:'green',next:'equipo'},
-      {icon:'⏰',signal:'No tengo tiempo',main:'No tienen tiempo ahora',reply:'"Lo entiendo — por eso lo hacemos muy directo y enfocado a vuestro caso. ¿5 minutos esta semana?"',redirect:'→ agenda otro momento',color:'red',next:'exit-tiempo'},
-      {icon:'🚫',signal:'No me interesa',main:'No les interesa',reply:'"Sin problema — por curiosidad, ¿qué estáis haciendo ahora mismo en ese área?"',redirect:'→ intentar abrir curiosidad',color:'red',next:'exit-no'},
-    ]
-  },
-
-  'exit-tiempo':{num:'—',cat:'Salida',label:'Sin tiempo',
-    say:'¿Cuándo sería un buen momento para hablar 5 minutos esta semana?',
-    hint:'No insistas más. El objetivo es solo conseguir el próximo contacto.',
-    answers:[
-      {icon:'📅',signal:'',main:'Agenda otro momento',reply:'',redirect:'Fin del flujo — marcar en CRM',color:'',next:null,outcome:'exit'},
-    ]
-  },
-
-  'exit-no':{num:'—',cat:'Salida',label:'Sin interés',
-    say:'Sin problema. ¿Qué estáis usando ahora mismo para gestionar la infra?',
-    hint:'A veces la pregunta de curiosidad abre algo. Si no, sal elegante.',
-    answers:[
-      {icon:'💬',signal:'',main:'Da algo de info / abre un poco',reply:'"Interesante — pues si en algún momento os planteáis optimizarlo, encantado de hablar."',redirect:'→ cerrar con elegancia',color:'yellow',next:null,outcome:'exit'},
-      {icon:'🚫',signal:'',main:'Cierra completamente',reply:'"Perfecto, sin problema. Quedo por aquí si cambia algo."',redirect:'',color:'red',next:null,outcome:'exit'},
-    ]
-  },
-
-  equipo:{num:'1',cat:'Contexto',label:'Equipo / Ownership',
-    say:'¿Cómo se organiza vuestro equipo en todo lo relacionado con infraestructura y operación?',
-    hint:'Escucha quién lo lleva, si hay DevOps, si lo llevan los devs "de lado". El "de lado" es el pain.',
-    answers:[
-      {icon:'👨‍💻',signal:'"lo llevamos entre nosotros" / sin DevOps',main:'Devs llevan la infra',reply:'"Tiene sentido, eso lo vemos mucho — normalmente acaba quitando bastante foco al equipo de producto."',redirect:'"¿En qué os está generando más fricción ahora mismo?"',color:'yellow',next:'prioridad',sigs:{nodev:true},icp:{urgency:60}},
-      {icon:'🏢',signal:'"lo lleva una consultora / agencia"',main:'Agencia externa',reply:'"Vale, entonces dependéis bastante de terceros para cualquier cambio, ¿no?"',redirect:'"¿Cómo os afecta eso en tiempos o flexibilidad?"',color:'orange',next:'prioridad',sigs:{nodev:true},icp:{urgency:50}},
-      {icon:'🔥',signal:'"lo lleva una persona" / saturado',main:'1 DevOps saturado',reply:'"Eso suele convertirse en cuello de botella bastante rápido."',redirect:'"¿Qué tipo de tareas se le acumulan más?"',color:'red',next:'prioridad',sigs:{dep:true},icp:{urgency:80}},
-      {icon:'🧱',signal:'"tenemos equipo / estructura"',main:'Equipo maduro',reply:'"Genial, entonces ya tenéis bastante estructura montada."',redirect:'"¿Dónde está hoy el mayor reto a nivel de operación?"',color:'green',next:'prioridad',icp:{stack:60}},
-    ]
-  },
-
-  prioridad:{num:'2',cat:'Contexto',label:'Prioridad actual',
-    say:'Ahora mismo, ¿en qué está más centrado el equipo técnico: en escalar lo que ya tenéis o en construir base?',
-    hint:'Esta pregunta revela urgencia real. Si están escalando tienen pain. Si están construyendo base, el timing puede ser clave.',
-    answers:[
-      {icon:'📈',signal:'"escalando / mucha demanda"',main:'Escalando — mucha presión',reply:'"Ahí suele aparecer donde está el cuello antes de lo esperado."',redirect:'"¿Qué partes están aguantando peor el crecimiento?"',color:'red',next:'stack',icp:{urgency:85}},
-      {icon:'🏗️',signal:'"construyendo base / modernizando"',main:'Construyendo / modernizando',reply:'"Buen momento entonces para hacerlo bien desde el principio."',redirect:'"¿Qué partes seguís teniendo más manuales?"',color:'yellow',next:'stack',icp:{urgency:60}},
-      {icon:'🔄',signal:'"las dos cosas"',main:'Ambas a la vez',reply:'"Eso suele ser lo más duro — escalar mientras construyes."',redirect:'"¿Dónde notáis más la tensión?"',color:'orange',next:'stack',icp:{urgency:75}},
-    ]
-  },
-
-  stack:{num:'3',cat:'ICP',label:'Madurez técnica',
-    say:'¿Cómo trabajáis la infraestructura a nivel técnico: qué partes tenéis automatizadas y cuáles siguen siendo más manuales?',
-    hint:'No preguntes "¿usáis Kubernetes?". Deja que lo mencionen. Lo manual es el pain.',
-    answers:[
-      {icon:'⚙️',signal:'Docker / K8s / Terraform / CI-CD',main:'Stack moderno — mencionan herramientas',reply:'"Bien, entonces ya tenéis bastante base automatizada."',redirect:'"¿Qué partes os dan más guerra aún?"',color:'green',next:'cloud',icp:{stack:90}},
-      {icon:'🔧',signal:'"algo automatizado, no todo"',main:'Stack parcial / mixto',reply:'"Bastante habitual — suele haber partes que se quedaron sin modernizar."',redirect:'"¿Qué es lo que más os cuesta mantener ahora mismo?"',color:'yellow',next:'cloud',icp:{stack:50}},
-      {icon:'📦',signal:'"todo manual / scripts / nada de K8s"',main:'Stack manual / legacy',reply:'"Ahí suele haber bastante margen de mejora."',redirect:'"¿Qué es lo que más os limita en el día a día?"',color:'orange',next:'cloud',icp:{stack:20}},
-    ]
-  },
-
-  cloud:{num:'4',cat:'ICP',label:'Entorno cloud',
-    say:'¿Cómo tenéis distribuida la infraestructura entre cloud y otros entornos?',
-    hint:'Escucha AWS de forma natural. On-prem puro = posible descalificación.',
-    answers:[
-      {icon:'🟠',signal:'"en AWS"',main:'AWS — mención directa',reply:'"Perfecto, entonces ya estáis en el entorno donde más podemos actuar."',redirect:'"¿Estáis sacando partido a los programas de descuentos de AWS?"',color:'green',next:'costes',sigs:{aws:true},icp:{cloud:100}},
-      {icon:'☁️',signal:'"GCP / Azure / otro cloud"',main:'Otro cloud',reply:'"Tiene sentido — ¿lo habéis evaluado alguna vez con AWS?"',redirect:'"¿Qué os llevó a elegir ese proveedor?"',color:'cyan',next:'costes',icp:{cloud:65}},
-      {icon:'🔀',signal:'"parte cloud parte on-prem"',main:'Híbrido',reply:'"Eso suele añadir bastante complejidad de gestión."',redirect:'"¿Cómo os está afectando tener los dos entornos?"',color:'yellow',next:'costes',icp:{cloud:40}},
-      {icon:'🖥️',signal:'"todo on-prem / sin cloud"',main:'Solo on-prem',reply:'"Entiendo — ¿lo habéis valorado alguna vez o hay alguna razón específica?"',redirect:'→ evaluar si hay intención de migrar',color:'red',next:'descal',icp:{cloud:0}},
-    ]
-  },
-
-  descal:{num:'—',cat:'Descalificación',label:'On-prem puro',
-    say:'¿Hay algún plan de migrar a cloud en el horizonte o está descartado por ahora?',
-    hint:'Si no hay intención → descalifica elegante. Si hay intención → continúa con ruta migración.',
-    answers:[
-      {icon:'🚀',signal:'Sí, estamos valorando / planeando',main:'Hay intención de migrar',reply:'"Perfecto, justo ahí podemos ayudar a hacerlo bien desde el principio."',redirect:'→ continuar al cierre con ruta migración',color:'green',next:'cierre'},
-      {icon:'🚫',signal:'No, sin planes',main:'Sin intención de migrar',reply:'"Lo entiendo, pues en este momento lo que hacemos encaja mejor con equipos ya en cloud. Si en algún momento cambia, estaré encantado de hablar."',redirect:'',color:'red',next:null,outcome:'exit'},
-    ]
-  },
-
-  costes:{num:'5',cat:'Pain',label:'Gasto cloud',
-    say:'¿Cómo gestionáis y entendéis el gasto cloud a lo largo del mes?',
-    hint:'Si hay pausa larga o vaguedad → hay pain. Sigue con: <strong>"¿Qué suele pasar cuando revisáis ese gasto?"</strong>',
-    answers:[
-      {icon:'🕶️',signal:'"no tenemos visibilidad" / "a ciegas"',main:'Sin visibilidad del gasto',reply:'"Eso es bastante habitual — normalmente hay recursos sobredimensionados o cosas que se quedan corriendo sin control."',redirect:'"¿Qué suele pasar cuando revisáis la factura?"',color:'red',next:'friccion',sigs:{cost:true},icp:{urgency:85}},
-      {icon:'😤',signal:'"la factura sube" / "va creciendo"',main:'Costes creciendo sin control',reply:'"Claro, sin visibilidad es difícil optimizar de verdad."',redirect:'"¿Tenéis identificado qué servicios están tirando más del gasto?"',color:'yellow',next:'friccion',sigs:{cost:true},icp:{urgency:80}},
-      {icon:'😎',signal:'"está controlado" / "lo monitorizamos"',main:'Dicen que está controlado',reply:'"Buen punto — ¿cómo lo estáis monitorizando ahora mismo?"',redirect:'→ busca grietas en cómo lo hacen',color:'green',next:'friccion'},
-    ]
-  },
-
-  friccion:{num:'6',cat:'Pain',label:'Fricción real',
-    say:'¿Qué partes de vuestra infraestructura os están generando más fricción o esfuerzo ahora mismo?',
-    hint:'Esta pregunta abre el pain sin sugerir categorías. <strong>Deja hablar.</strong> Escucha costes, alertas, deploys, dependencia.',
-    answers:[
-      {icon:'💸',signal:'"los costes" / "la factura" / "el gasto"',main:'Hablan de costes',reply:'"Tiene sentido — lo que solemos ver es falta de visibilidad y recursos sobredimensionados."',redirect:'"¿Qué impacto está teniendo eso en el equipo o en el negocio?"',color:'yellow',next:'deploy',sigs:{cost:true},icp:{urgency:80}},
-      {icon:'🚨',signal:'"las alertas" / "los incidentes" / "las guardias"',main:'Hablan de incidentes',reply:'"Eso suele ser más problema de señal que de infraestructura."',redirect:'"¿Cómo gestionáis hoy el ruido de alertas?"',color:'purple',next:'deploy',sigs:{obs:true},icp:{urgency:85}},
-      {icon:'🚀',signal:'"los deploys" / "llevar a producción" / "nos da miedo"',main:'Hablan de deploys',reply:'"Ahí suele haber bastante fricción entre desarrollo e infraestructura."',redirect:'"¿Qué es lo que más os preocupa cuando hacéis un deploy?"',color:'cyan',next:'deploy',sigs:{dev:true},icp:{urgency:85}},
-      {icon:'🕸️',signal:'"la complejidad" / "mantener todo" / "el legacy"',main:'Hablan de complejidad general',reply:'"Eso suele ir acumulando deuda técnica que en algún momento explota."',redirect:'"¿Qué parte de esa complejidad os está costando más?"',color:'',next:'deploy',sigs:{obs:true},icp:{urgency:70}},
-    ]
-  },
-
-  deploy:{num:'7',cat:'Pain',label:'Proceso de deploy',
-    say:'¿Cómo es el proceso desde que alguien desarrolla algo hasta que está en producción?',
-    hint:'El proceso de deploy revela madurez y dolor. Si hay miedo a deployar, hay pain de velocidad.',
-    answers:[
-      {icon:'😬',signal:'"nos da miedo" / "verificamos mucho antes"',main:'Miedo a deployar',reply:'"Eso suele indicar que hay bastante fricción en el proceso."',redirect:'"¿Qué es lo que más os preocupa cuando hacéis un deploy?"',color:'red',next:'incidentes',sigs:{dev:true},icp:{deploy:30,urgency:85}},
-      {icon:'🐢',signal:'"vamos lentos" / "tarda días"',main:'Deploys lentos',reply:'"Ahí normalmente hay un cuello entre desarrollo e infraestructura."',redirect:'"¿Dónde se suele atascar más el proceso?"',color:'yellow',next:'incidentes',sigs:{dev:true},icp:{deploy:40,urgency:75}},
-      {icon:'✅',signal:'"va bien" / "tenemos CI-CD"',main:'Va bien',reply:'"Perfecto — ¿qué es lo que mejor os está funcionando ahí?"',redirect:'"¿Y qué os gustaría mejorar?"',color:'green',next:'incidentes',icp:{deploy:80}},
-    ]
-  },
-
-  incidentes:{num:'8',cat:'Pain',label:'Incidentes',
-    say:'Cuando algo falla en producción, ¿cómo lo detectáis y cómo responde el equipo?',
-    hint:'El "cómo responde el equipo" revela si hay proceso o caos. Guardias duras = pain emocional, vendible.',
-    answers:[
-      {icon:'🔥',signal:'"muchas alertas" / "ruido constante"',main:'Alert fatigue',reply:'"Eso suele ser más problema de señal que de infraestructura en sí."',redirect:'"¿Cómo gestionáis hoy el ruido de alertas?"',color:'red',next:'dependencia',sigs:{obs:true},icp:{urgency:90}},
-      {icon:'😴',signal:'"guardias duras" / "nos despiertan de noche"',main:'Guardias duras',reply:'"Eso quema bastante al equipo."',redirect:'"¿Qué tipo de incidencias son las más repetidas?"',color:'red',next:'dependencia',sigs:{obs:true},icp:{urgency:95}},
-      {icon:'😎',signal:'"controlado" / "tenemos proceso"',main:'Dicen que está controlado',reply:'"Genial — ¿cómo lo tenéis montado para que funcione así?"',redirect:'→ busca complejidad oculta detrás',color:'green',next:'dependencia'},
-    ]
-  },
-
-  dependencia:{num:'9',cat:'Pain',label:'Distribución del conocimiento',
-    say:'¿Cómo de distribuido está el conocimiento de la infraestructura dentro del equipo?',
-    hint:'Si hay una sola persona que sabe todo → riesgo crítico. Dejarlo caer sin forzarlo.',
-    answers:[
-      {icon:'👤',signal:'"depende de X" / "si no está él..."',main:'Alta dependencia en una persona',reply:'"Eso es un riesgo bastante típico."',redirect:'"¿Qué pasaría si esa persona no estuviera disponible?"',color:'red',next:'escalado',sigs:{dep:true},icp:{urgency:90}},
-      {icon:'👥',signal:'"está distribuido" / "varios lo conocen"',main:'Distribuido entre varios',reply:'"Buen setup — eso da bastante resiliencia."',redirect:'"¿Qué partes siguen siendo más críticas?"',color:'green',next:'escalado'},
-    ]
-  },
-
-  escalado:{num:'10',cat:'Pain',label:'Escalado',
-    say:'Cuando el sistema crece o hay más carga, ¿qué tipo de situaciones suelen aparecer?',
-    hint:'El escalado revela arquitectura y automatización. Si escala mal → pain crítico.',
-    answers:[
-      {icon:'😬',signal:'"hay problemas" / "se cae" / "manual"',main:'Problemas de escalado',reply:'"Ahí suele haber temas de arquitectura o automatización."',redirect:'"¿Qué tipo de problemas aparecen cuando crece la carga?"',color:'red',next:'clave',icp:{urgency:85}},
-      {icon:'😎',signal:'"escala bien" / "sin problemas"',main:'Escala bien',reply:'"Genial — ¿qué os ha costado más llegar ahí?"',redirect:'→ muchas veces sacas pain pasado que es vendible',color:'green',next:'clave'},
-    ]
-  },
-
-  clave:{num:'11',cat:'Pregunta Clave',label:'Problema principal',
-    say:'Si pudieras eliminar un problema del día a día del equipo, ¿cuál sería y cómo os está impactando ahora mismo?',
-    hint:'<strong>CALLAR después de preguntar.</strong> No sugieras opciones. Esta respuesta define qué demo mostrar. Valida → amplifica → pregunta.',
-    answers:[
-      {icon:'💸',signal:'"los costes" / "no sé dónde va el dinero"',main:'"Los costes cloud / la factura"',reply:'"Tiene todo el sentido — eso es justo donde más impacto estamos viendo."',redirect:'"¿Cuánto os está costando aproximadamente no tenerlo resuelto?"',color:'yellow',next:'historia',sigs:{cost:true},icp:{urgency:90}},
-      {icon:'🚨',signal:'"las alertas" / "los incidentes" / "las guardias"',main:'"Incidentes / alertas / guardias"',reply:'"Eso suele ser de lo más crítico para el equipo."',redirect:'"¿Cómo os está afectando eso a nivel de equipo y de velocidad?"',color:'purple',next:'historia',sigs:{obs:true},icp:{urgency:90}},
-      {icon:'🚀',signal:'"los deploys" / "llevar a producción"',main:'"Deploys lentos / miedo a prod"',reply:'"Ahí es donde más fricción vemos normalmente."',redirect:'"¿Cuánto tiempo perdéis por semana en eso aproximadamente?"',color:'cyan',next:'historia',sigs:{dev:true},icp:{urgency:90}},
-      {icon:'🤷',signal:'Respuesta difusa / no concreta',main:'Respuesta difusa',reply:'"Si tuvieras que elegir una sola cosa que os quite más tiempo o energía, ¿cuál sería?"',redirect:'→ vuelve a preguntar más específico',color:'',next:'historia'},
-    ]
-  },
-
-  historia:{num:'12',cat:'Historia Real',label:'Caso concreto',
-    say:'¿Recuerdas algún caso reciente donde eso haya generado un problema concreto o un coste inesperado?',
-    hint:'Necesitas: historia real + emoción + impacto. Esa historia es el gancho para abrir la demo.',
-    answers:[
-      {icon:'📖',signal:'Sí, cuentan algo concreto',main:'Cuentan un caso real',reply:'"Vale, justo ese tipo de situaciones son las que solemos trabajar."',redirect:'→ guardar esa historia para abrir la demo con ella',color:'green',next:'transicion'},
-      {icon:'🤔',signal:'No recuerdan nada concreto',main:'Nada concreto',reply:'',redirect:'"¿Algo en los últimos meses que haya generado fricción o coste inesperado?"',color:'yellow',next:'transicion'},
-    ]
-  },
-
-  transicion:{num:'13',cat:'Transición',label:'Conectar con valor',
-    say:'[Adapta según el pain detectado — di la frase correspondiente]',
-    hint:'Valida su pain con tu experiencia. Corto. No vendas todavía.',
-    answers:[
-      {icon:'💸',signal:'Pain de costes',main:'Transición: costes',reply:'"Tiene sentido, lo que solemos ver ahí es falta de visibilidad y recursos sobredimensionados que nadie ha revisado."',redirect:'→ ir a cierre',color:'yellow',next:'cierre',sigs:{cost:true}},
-      {icon:'🚨',signal:'Pain de incidentes',main:'Transición: observability',reply:'"Eso suele venir más de cómo se gestiona la señal que de la infraestructura en sí."',redirect:'→ ir a cierre',color:'purple',next:'cierre',sigs:{obs:true}},
-      {icon:'🚀',signal:'Pain de deploy',main:'Transición: developer',reply:'"Ahí suele haber bastante fricción entre desarrollo e infraestructura que se puede resolver bastante rápido."',redirect:'→ ir a cierre',color:'cyan',next:'cierre',sigs:{dev:true}},
-    ]
-  },
-
-  cierre:{num:'14',cat:'Cierre',label:'Agendar demo',
-    say:'Si te enseño en 30 minutos cómo estamos resolviendo esto en equipos similares al vuestro, ¿cómo te encajaría verlo esta semana?',
-    hint:'<strong>No preguntes si quieren. Pregunta cuándo.</strong> Si dudan: "La idea sería enfocarlo en vuestro caso concreto y ver si tiene sentido o no, sin compromiso."',
-    answers:[
-      {icon:'📅',signal:'Acepta la demo',main:'Acepta — agenda la demo',reply:'"Perfecto, te envío el invite ahora mismo. ¿Quién más debería estar — el CTO, algún DevOps?"',redirect:'→ confirmar asistentes y enviar invite',color:'green',next:null,outcome:'demo'},
-      {icon:'🤔',signal:'"no sé" / "quizás" / duda',main:'Tibio — tiene dudas',reply:'"Aunque sea para ver cómo lo están resolviendo otros equipos, puede darte contexto útil."',redirect:'"La idea es enfocarlo en vuestro caso concreto, sin compromiso."',color:'yellow',next:'cierre-obj'},
-      {icon:'👋',signal:'Rechaza directamente',main:'Frío — rechaza',reply:'"Si ahora no es prioridad, lo dejamos aquí y retomamos más adelante."',redirect:'"¿Cuándo tendría más sentido hablar?"',color:'red',next:null,outcome:'followup'},
-    ]
-  },
-
-  'cierre-obj':{num:'14b',cat:'Cierre',label:'Gestión de objeción',
-    say:'¿Qué es lo que te genera dudas — es el timing o es que no ves el encaje?',
-    hint:'Escucha la objeción real. No ataques. Redirige con la objeción específica.',
-    answers:[
-      {icon:'🗓️',signal:'"ahora no es el momento"',main:'Timing — ahora no',reply:'"Lo entiendo — ¿cuándo tendría más sentido retomarlo?"',redirect:'→ quedar para fecha concreta',color:'yellow',next:null,outcome:'followup'},
-      {icon:'🎯',signal:'"no veo el encaje"',main:'No ve el encaje',reply:'"Tiene sentido — déjame preguntarte: [reformular con su pain específico]."',redirect:'"¿Tendría sentido verlo con ese enfoque?"',color:'red',next:null,outcome:'followup'},
-      {icon:'✅',signal:'Se convence',main:'Se convence — acepta',reply:'"Perfecto, te envío el invite ahora."',redirect:'→ confirmar asistentes',color:'green',next:null,outcome:'demo'},
-    ]
-  },
-
+const ACCENT = {
+  green:{bg:'var(--green-bg)',fg:'var(--green-d)',solid:'var(--green)'},
+  blue:{bg:'var(--blue-bg)',fg:'var(--blue-d)',solid:'var(--blue)'},
+  amber:{bg:'var(--amber-bg)',fg:'var(--amber-d)',solid:'var(--amber)'},
+  purple:{bg:'var(--purple-bg)',fg:'var(--purple-d)',solid:'var(--purple)'},
+  red:{bg:'var(--red-bg)',fg:'var(--red-d)',solid:'var(--red)'},
+  teal:{bg:'var(--teal-bg)',fg:'var(--teal-d)',solid:'var(--teal)'},
+  ink:{bg:'var(--paper)',fg:'var(--ink)',solid:'var(--ink)'}
 };
 
-// ── OUTCOMES ──
-function getPainOutcome(){
-  if(S.sigs.obs) return {type:'obs',badge:'🚨 Demo: Observability Agent',badgeStyle:'background:rgba(152,72,255,.1);border:1px solid rgba(152,72,255,.3);color:var(--purple)',title:'Ruta: Observability Agent',desc:'Pain detectado: alertas, incidentes, fatiga operativa. Demo enfocada en reducir el ruido y gestionar incidentes automáticamente.',items:['Alert fatigue reduction','Incident root cause automation','On-call burden elimination','Resizes Platform'],iStyle:'background:rgba(152,72,255,.08);border:1px solid rgba(152,72,255,.2);color:var(--purple)',script:'Por lo que me cuentas, vuestro equipo está pagando un precio alto gestionando alertas e incidentes. En 30 minutos os muestro cómo nuestro Observability Agent reduce ese ruido en más de un 70%. ¿Te encaja mañana o pasado?'};
-  if(S.sigs.cost) return {type:'cost',badge:'💸 Demo: Cost Agent',badgeStyle:'background:rgba(255,200,48,.1);border:1px solid rgba(255,200,48,.3);color:var(--yellow)',title:'Ruta: Cost Agent',desc:'Pain detectado: gasto cloud sin control. Demo enfocada en recuperar entre un 20–40% del gasto sin tocar la arquitectura.',items:['Cloud cost visibility','AWS Discounts + Reserved Instances','Right-sizing automático','Resizes Platform'],iStyle:'background:rgba(255,200,48,.08);border:1px solid rgba(255,200,48,.2);color:var(--yellow)',script:'Por lo que me cuentas, hay una oportunidad real de recuperar entre un 20 y un 40% de lo que pagáis en AWS sin tocar nada de la arquitectura. En 30 minutos os lo enseño en vivo. ¿Te encaja mañana o pasado?'};
-  if(S.sigs.dev) return {type:'dev',badge:'🚀 Demo: Developer Agent',badgeStyle:'background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:var(--cyan)',title:'Ruta: Developer Agent',desc:'Pain detectado: deploys lentos o con miedo. Demo enfocada en acelerar el ciclo y reducir el riesgo en producción.',items:['Deploy pipeline automation','Pre-prod risk detection','Kubernetes analysis','Resizes Platform'],iStyle:'background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);color:var(--cyan)',script:'Por lo que me cuentas, los deploys os están costando más tiempo y confianza de lo que deberían. En 30 minutos os muestro cómo acelerar ese ciclo y reducir el riesgo de romper prod. ¿Te encaja mañana o pasado?'};
-  return {type:'dev',badge:'🎯 Demo agendada',badgeStyle:'background:rgba(0,224,144,.1);border:1px solid rgba(0,224,144,.3);color:var(--green)',title:'¡Demo confirmada!',desc:'Tienes todo lo que necesitas. Usa la historia concreta que te contaron para abrir la demo.',items:['Enviar invite','Confirmar asistentes','Personalizar por pain','Caso de estudio similar'],iStyle:'background:rgba(0,224,144,.08);border:1px solid rgba(0,224,144,.2);color:var(--green)',script:'Perfecto, te envío el invite ahora mismo. ¿Quién más debería estar de vuestro lado?'};
-}
+// ---- NODE GRAPH ----
+// type: 'say' (line + answers), 'ask' (question + answers), 'end' (terminal outcome)
+const NODES = {
+  start: {
+    phase:1, phaseName:'Apertura', phaseColor:'green', phaseMeta:'Bajar defensas + permiso',
+    objective:{t:'Objetivo: conseguir permiso y bajar defensas', c:'green'},
+    say:'Hola {nombre}, ¿qué tal estás? Mira, soy {tú} de Resizes. Si te digo que esto es una llamada en frío… ¿<b>tirarías el móvil por la ventana</b>? ¿O me dejas <span class="hl">2 minutos</span> y, si no es relevante para ti, no te vuelvo a llamar nunca más?',
+    answers:[
+      {label:'Se ríe / "venga, 2 min"', hint:'Acepta escuchar', dot:'green', go:'diag', crumb:'Acepta escuchar'},
+      {label:'"Ahora no puedo"', hint:'Sin tiempo ahora', dot:'amber', go:'callback', crumb:'Sin tiempo ahora'},
+      {label:'"No me interesa"', hint:'Rechazo de entrada', dot:'red', go:'deflect', crumb:'"No me interesa" de entrada'}
+    ]
+  },
+  callback: {
+    phase:1, phaseName:'Apertura', phaseColor:'amber', phaseMeta:'Reagendar',
+    say:'Lo entiendo, no te robo tiempo. ¿Te va mejor que te llame mañana o esta tarde? Te prometo que son 2 minutos.',
+    coach:{c:'amber',tit:'Acción',items:['Propón día y hora concretos, no "ya te llamo".','Agenda el callback en el CRM y cuelga amable.']},
+    end:{badge:'Callback agendado', c:'amber', actions:[{label:'Volver al inicio', go:'start'}]}
+  },
+  deflect: {
+    phase:1, phaseName:'Apertura', phaseColor:'red', phaseMeta:'Desarmar el "no"',
+    say:'Sin problema. Solo una cosa antes de colgar: ¿tu <b>equipo técnico va fluido</b>, o vive esperando que alguien le desbloquee entornos, accesos y despliegues? Si me dices que va fino, cuelgo y no molesto.',
+    sub:'No discutas el "no me interesa". Una sola pregunta de dolor y dejas que decida.',
+    listen:true,
+    answers:[
+      {label:'"Pues… ahora que lo dices, va lento"', hint:'Pica', dot:'green', go:'diag', crumb:'Reconoce que el equipo va lento'},
+      {label:'"Va bien, gracias"', hint:'Cierra de verdad', dot:'red', go:'closeNice', crumb:'Cierra sin interés'}
+    ]
+  },
+  closeNice: {
+    phase:1, phaseName:'Apertura', phaseColor:'ink', phaseMeta:'Cierre limpio',
+    say:'Perfecto, me alegro. Gracias por el minuto y disculpa la interrupción. Si en algún momento cambia, aquí estoy.',
+    end:{badge:'Cierre limpio · puerta abierta', c:'ink', actions:[{label:'Volver al inicio', go:'start'}]}
+  },
 
-const OUTCOMES = {
-  exit:{type:'discard',badge:'🚫 Lead descartado',badgeStyle:'background:rgba(255,58,88,.1);border:1px solid rgba(255,58,88,.3);color:var(--red)',title:'Lead descalificado',desc:'Encaje insuficiente. Salir con elegancia, dejar la puerta abierta.',items:['Marcar en CRM','Sin cloud o sin intención de migrar','Revisión en 6 meses'],iStyle:'background:rgba(255,58,88,.08);border:1px solid rgba(255,58,88,.2);color:var(--red)',script:'Entiendo, pues en este momento lo que hacemos encaja mejor con equipos ya en cloud. Si algún día os planteáis dar ese paso, estaré encantado.'},
-  followup:{type:'discard',badge:'📋 Follow up',badgeStyle:'background:rgba(255,200,48,.1);border:1px solid rgba(255,200,48,.3);color:var(--yellow)',title:'Seguimiento en 30 días',desc:'No era el momento. Marcar con el pain detectado y retomar.',items:['CRM: anotar pain','Secuencia nurturing','Call en 30 días','Enviar caso de estudio'],iStyle:'background:rgba(255,200,48,.08);border:1px solid rgba(255,200,48,.2);color:var(--yellow)',script:'Perfecto, sin problema. Te mando algo útil mientras tanto y hablamos en unas semanas cuando el momento sea mejor.'},
-  demo:'PAIN',
+  // ---- DIAGNÓSTICO DE MOMENTO ----
+  diag: {
+    phase:2, phaseName:'Diagnóstico', phaseColor:'blue', phaseMeta:'¿Base o agilidad?',
+    objective:{t:'Objetivo: saber qué producto encaja', c:'blue'},
+    say:'Para no hacerte perder el tiempo, una pregunta rápida: ¿vuestro reto ahora está más en <b>tener la infraestructura cloud bien montada y bajo control</b>, o en que <b>el equipo técnico va frenado</b> porque todo pasa por una cola de tickets y un equipo que no da abasto?',
+    listen:true,
+    answers:[
+      {label:'"La infraestructura / el cloud"', hint:'Necesita BASE → AWS gestionado', dot:'green', go:'aws_costes', crumb:'Su reto es la infraestructura'},
+      {label:'"El equipo va frenado"', hint:'Necesita AGILIDAD → DevOps Agent', dot:'purple', go:'agent_bottleneck', crumb:'Su reto es el equipo frenado'},
+      {label:'"Las dos cosas"', hint:'Escalera: base primero', dot:'blue', go:'aws_costes', crumb:'Ambas: empezamos por la base'}
+    ]
+  },
+
+  // ======= RAMA A · AWS GESTIONADO =======
+  aws_costes: {
+    phase:2, phaseName:'Rama A · AWS', phaseColor:'green', phaseMeta:'Costes cloud',
+    ask:'¿Cuándo fue la última vez que abristeis la factura de AWS y os llevasteis una sorpresa?',
+    sub:'Pain point: costes cloud sin control.',
+    listen:true,
+    answers:[
+      {label:'"Sí, nos ha pasado"', hint:'Admite el dolor', dot:'green', go:'aws_costes_pain', crumb:'Factura de AWS le ha sorprendido'},
+      {label:'"Lo tenemos controlado"', hint:'Verifica', dot:'amber', go:'aws_costes_check', crumb:'Dice que controla los costes'},
+      {label:'"No lo reviso yo"', hint:'Redirige', dot:'ink', go:'aws_costes_unknown', crumb:'No revisa él los costes'}
+    ]
+  },
+  aws_costes_pain: {
+    phase:2, phaseName:'Rama A · AWS', phaseColor:'green', phaseMeta:'Costes · profundiza',
+    ask:'¿Qué fue lo que se había disparado? ¿Y quién lo revisa y optimiza cada mes?',
+    coach:{c:'green',tit:'Lo que buscas',items:['Que admita que no hay nadie optimizando de forma sistemática.','Confirmado el dolor → pasa a validar.']},
+    answers:[{label:'Dolor confirmado', hint:'Sigue al cierre', dot:'green', go:'validate', crumb:'Costes sin optimizar — dolor confirmado'}]
+  },
+  aws_costes_check: {
+    phase:2, phaseName:'Rama A · AWS', phaseColor:'amber', phaseMeta:'Costes · verifica',
+    ask:'¿Tenéis lifecycle policies y alertas de presupuesto configuradas, o lo revisáis a mano? ¿Qué % de la factura dirías que es waste?',
+    coach:{c:'amber',tit:'Casi siempre aparece una grieta',items:['Si es manual: "¿cuánto tiempo os lleva al mes?"','Si no sabe el % de waste: ahí está la oportunidad.']},
+    answers:[
+      {label:'Aparece una grieta', hint:'Reencuadra hacia el dolor', dot:'green', go:'validate', crumb:'Grieta en el control de costes'},
+      {label:'Lo tiene de verdad resuelto', hint:'Cambia de pain point', dot:'amber', go:'aws_visib', crumb:'Costes bien resueltos'}
+    ]
+  },
+  aws_costes_unknown: {
+    phase:2, phaseName:'Rama A · AWS', phaseColor:'ink', phaseMeta:'Costes · redirige',
+    ask:'¿Quién lo lleva? ¿Tiene un dashboard claro o va un poco a ciegas? ¿Os sería útil verlo desglosado en un vistazo?',
+    coach:{c:'ink',tit:'Objetivo',items:['Identificar al decisor técnico real.','Sembrar el valor de la visibilidad de costes.']},
+    answers:[
+      {label:'Hay interés → seguir', hint:'Prueba otro dolor', dot:'green', go:'aws_visib', crumb:'Interesado pese a no llevarlo él'},
+      {label:'Hay que hablar con otra persona', hint:'Buscar al decisor', dot:'amber', go:'findDecisor', crumb:'Decisor técnico es otra persona'}
+    ]
+  },
+  aws_visib: {
+    phase:2, phaseName:'Rama A · AWS', phaseColor:'amber', phaseMeta:'Visibilidad incidencias',
+    ask:'Si vuestra base de datos se llenara mañana al 95%, ¿cómo os enteraríais — por una alerta automática o porque algo deja de funcionar?',
+    sub:'Pain point: visibilidad sobre incidencias.',
+    listen:true,
+    answers:[
+      {label:'"Porque algo peta"', hint:'Admite el dolor', dot:'green', go:'aws_visib_pain', crumb:'Se entera de incidencias tarde'},
+      {label:'"Tenemos alertas"', hint:'Verifica', dot:'amber', go:'aws_visib_check', crumb:'Dice tener alertas'},
+      {label:'"No estoy seguro"', hint:'Siembra duda', dot:'ink', go:'aws_visib_pain', crumb:'No sabe cómo se enteraría'}
+    ]
+  },
+  aws_visib_pain: {
+    phase:2, phaseName:'Rama A · AWS', phaseColor:'green', phaseMeta:'Visibilidad · profundiza',
+    ask:'¿Os ha pasado enteraros de un problema porque os llamó un cliente enfadado? Cuando ocurre, ¿cuánto tardáis en saber la causa?',
+    coach:{c:'green',tit:'Lo que buscas',items:['Si el cliente avisa antes que la alerta → caso servido.','Confirmado el dolor → pasa a validar.']},
+    answers:[{label:'Dolor confirmado', hint:'Sigue al cierre', dot:'green', go:'validate', crumb:'Incidencias descubiertas tarde — dolor confirmado'}]
+  },
+  aws_visib_check: {
+    phase:2, phaseName:'Rama A · AWS', phaseColor:'amber', phaseMeta:'Visibilidad · verifica',
+    ask:'¿Cuántas alertas son señal real vs ruido que ya nadie mira? ¿Tenéis un sitio único para ver la salud de todo o varias consolas?',
+    coach:{c:'amber',tit:'La grieta habitual',items:['Ruido de alertas = ceguera operativa.','Varias consolas = nadie tiene la foto completa.']},
+    answers:[
+      {label:'Aparece la grieta', hint:'Reencuadra', dot:'green', go:'validate', crumb:'Alertas ruidosas / dispersas'},
+      {label:'Lo tienen bien montado', hint:'Plantea el Agent', dot:'blue', go:'ladder', crumb:'Monitorización sólida'}
+    ]
+  },
+
+  // puente escalera desde AWS al Agent
+  ladder: {
+    phase:2, phaseName:'Escalera', phaseColor:'blue', phaseMeta:'AWS → Agent',
+    say:'Suena a que la base la tenéis bastante ordenada. Entonces te interesa más el segundo frente: que tus <b>devs pidan entornos, accesos y despliegues hablando con un agente</b>, sin abrir tickets ni esperar al equipo de plataforma. ¿Eso os pasa, que la gente se queda esperando?',
+    listen:true,
+    answers:[
+      {label:'"Sí, se quedan esperando"', hint:'Entra en el Agent', dot:'purple', go:'agent_bottleneck', crumb:'Devs esperando — encaja el Agent'},
+      {label:'"No, vamos ágiles"', hint:'Cierra suave', dot:'amber', go:'validate', crumb:'Equipo ágil'}
+    ]
+  },
+
+  // ======= RAMA B · DEVOPS AGENT =======
+  agent_bottleneck: {
+    phase:2, phaseName:'Rama B · Agent', phaseColor:'purple', phaseMeta:'Cuello de botella',
+    say:'Lo que veo en equipos que escalan es que el <b>equipo de plataforma se vuelve un cuello de botella</b>: cada entorno, acceso o despliegue es un ticket que se encola, los <b>sénior acaban de mesa de ayuda</b>, y el <b>conocimiento vive en la cabeza de una persona</b>. ¿Te suena?',
+    objective:{t:'Objetivo: confirmar el dolor del modelo de tickets', c:'purple'},
+    listen:true,
+    answers:[
+      {label:'"Sí, es justo eso"', hint:'Profundiza el cuello de botella', dot:'green', go:'agent_wait', crumb:'Reconoce el cuello de botella de tickets'},
+      {label:'"Algo hay, pero lo llevamos"', hint:'Verifica autoservicio', dot:'amber', go:'agent_wait', crumb:'Cuello de botella parcial'},
+      {label:'"No, eso lo tenemos resuelto"', hint:'Prueba carga del sénior', dot:'ink', go:'agent_senior', crumb:'Dice no tener cuello de botella'}
+    ]
+  },
+  agent_wait: {
+    phase:2, phaseName:'Rama B · Agent', phaseColor:'purple', phaseMeta:'Tiempos de espera',
+    ask:'Cuando un dev necesita un entorno o un acceso, ¿cuántos pasos hay y cuánto tarda en tenerlo? ¿Qué pasa cuando plataforma está saturado o de vacaciones?',
+    coach:{c:'purple',tit:'Cuantifica el dolor',items:['"¿Cuántas peticiones así entran por semana?"','Espera larga + dependencia de personas = dolor claro.']},
+    answers:[
+      {label:'Tarda / se encola', hint:'Dolor confirmado', dot:'green', go:'agent_senior', crumb:'Peticiones se encolan y tardan'},
+      {label:'Va razonablemente rápido', hint:'Mira la carga del sénior', dot:'amber', go:'agent_senior', crumb:'Tiempos aceptables'}
+    ]
+  },
+  agent_senior: {
+    phase:2, phaseName:'Rama B · Agent', phaseColor:'teal', phaseMeta:'Carga del sénior',
+    ask:'¿En qué se va el tiempo de tus ingenieros más sénior — trabajo de fondo o interrupciones rutinarias? Y el saber arreglar lo recurrente, ¿dónde vive?',
+    sub:'Pain point: sénior de mesa de ayuda + conocimiento tribal.',
+    listen:true,
+    answers:[
+      {label:'"Muchas interrupciones"', hint:'Dolor confirmado', dot:'green', go:'agent_mttr', crumb:'Sénior interrumpidos con rutina'},
+      {label:'"Está repartido"', hint:'Verifica dependencias', dot:'amber', go:'agent_knowledge', crumb:'Carga repartida (a verificar)'},
+      {label:'"No estoy seguro"', hint:'Siembra duda', dot:'ink', go:'agent_knowledge', crumb:'No mide la carga del sénior'}
+    ]
+  },
+  agent_knowledge: {
+    phase:2, phaseName:'Rama B · Agent', phaseColor:'teal', phaseMeta:'Conocimiento',
+    ask:'¿Hay cosas que solo sabe hacer una persona concreta? ¿Qué pasa cuando no está — o si se marcha del equipo?',
+    coach:{c:'teal',tit:'El riesgo oculto',items:['Bus factor de 1 = riesgo operativo real.','El conocimiento codificado en el agente no se va de vacaciones.']},
+    answers:[
+      {label:'Dependen de una persona', hint:'Dolor confirmado', dot:'green', go:'agent_mttr', crumb:'Dependencia de una persona clave'},
+      {label:'Está bien documentado', hint:'Prueba incidencias', dot:'amber', go:'agent_mttr', crumb:'Conocimiento documentado'}
+    ]
+  },
+  agent_mttr: {
+    phase:2, phaseName:'Rama B · Agent', phaseColor:'amber', phaseMeta:'Incidencias / DevEx',
+    ask:'Cuéntame la última incidencia seria: ¿cuánto se tardó en entender qué pasaba? Y para cerrar una tarea, ¿cuántas herramientas toca un dev?',
+    sub:'Pain point: MTTR alto + cambios de contexto.',
+    listen:true,
+    answers:[
+      {label:'"Tardamos mucho / muchas consolas"', hint:'Dolor confirmado', dot:'green', go:'validate', crumb:'MTTR alto y context switching'},
+      {label:'"Lo gestionamos bien"', hint:'Pasa a validar lo ya admitido', dot:'amber', go:'validate', crumb:'Gestión de incidencias aceptable'}
+    ]
+  },
+
+  findDecisor: {
+    phase:2, phaseName:'Diagnóstico', phaseColor:'amber', phaseMeta:'Buscar decisor',
+    say:'Lo ideal sería verlo con quien lleva la parte técnica. ¿Quién sería esa persona, y te parece si os convoco a los dos 15 minutos? Así no te hago de intermediario.',
+    coach:{c:'amber',tit:'Acción',items:['Consigue el nombre del decisor técnico.','Propón reunión conjunta, no "ya hablo yo con él".']},
+    end:{badge:'Lead cualificado · pendiente del decisor', c:'amber', actions:[{label:'Ir al CTA igualmente', go:'cta'},{label:'Volver al inicio', go:'start'}]}
+  },
+
+  // ---- VALIDAR ----
+  validate: {
+    phase:3, phaseName:'Validar', phaseColor:'amber', phaseMeta:'Reflejar y normalizar',
+    objective:{t:'Objetivo: reflejar el dolor antes de proponer', c:'amber'},
+    say:'Tiene sentido, y no es raro. Según con quién hables, devuélveselo a su lenguaje:',
+    coach:{c:'amber',tit:'Adapta al interlocutor',items:['CTO → "eso es coste y riesgo puro."','Lead de plataforma → "eso es toil y guardias interminables."','VP de Engineering → "eso os frena la entrega y quema al equipo."']},
+    answers:[{label:'Asiente — el dolor está fresco', hint:'Salta al CTA ahora', dot:'green', go:'cta', crumb:'Valida el dolor'}]
+  },
+
+  // ---- CTA ----
+  cta: {
+    phase:4, phaseName:'CTA', phaseColor:'purple', phaseMeta:'Invitar, no perseguir',
+    objective:{t:'Objetivo: agendar, sin presión', c:'purple'},
+    say:'¿Te sirve si te enseño en <span class="hl">15–20 minutos</span> cómo otros equipos como el tuyo han quitado de en medio justo esto? Si encaja, seguimos. Y si no, al menos te llevas un par de ideas para lo que ya tenéis.',
+    listen:true,
+    answers:[
+      {label:'"Vale, me encaja"', hint:'Agenda ya', dot:'green', go:'won', crumb:'Acepta la reunión'},
+      {label:'"Mándame info por email"', hint:'Reconvierte', dot:'amber', go:'emailDodge', crumb:'Pide info por email'},
+      {label:'"Ahora no es el momento"', hint:'Nurturing', dot:'red', go:'notNow', crumb:'No es el momento'}
+    ]
+  },
+  emailDodge: {
+    phase:4, phaseName:'CTA', phaseColor:'amber', phaseMeta:'Reconvertir el email',
+    say:'Claro, pero si te mando un PDF genérico acaba en la papelera, y no te culparía. Para mandarte algo que de verdad te sirva: ¿<b>qué te aprieta más ahora</b> — los costes, el equipo frenado o enteraros tarde de las incidencias?',
+    sub:'Con su respuesta, propón 15 minutos en vez del PDF.',
+    answers:[
+      {label:'Lo concreta → propongo 15 min', hint:'Vuelve al cierre', dot:'green', go:'won', crumb:'Concreta el dolor, acepta verlo'},
+      {label:'Insiste solo en el email', hint:'Mándalo + seguimiento', dot:'amber', go:'notNow', crumb:'Insiste en el email'}
+    ]
+  },
+  won: {
+    phase:4, phaseName:'CTA', phaseColor:'green', phaseMeta:'Cierre',
+    say:'Genial. ¿Te viene bien {día} a las {hora}? Te mando ahora mismo la invitación con un par de líneas de lo que veremos.',
+    coach:{c:'green',tit:'Antes de colgar',items:['Fija día y hora exactos, no "la semana que viene".','Envía la invitación en el momento, mientras habláis.','Apunta en el CRM el dolor principal que ha admitido.']},
+    end:{badge:'✓ Reunión agendada', c:'green', actions:[{label:'Empezar otra llamada', go:'start'}]}
+  },
+  notNow: {
+    phase:4, phaseName:'CTA', phaseColor:'red', phaseMeta:'Nurturing',
+    say:'Sin problema, gracias por los 2 minutos. ¿Te parece si te escribo en 1 o 2 meses por si ha cambiado algo? ¿Cuándo suele ser mejor época para vosotros?',
+    coach:{c:'red',tit:'Acción',items:['Consigue una fecha aproximada para el siguiente contacto.','Márcalo en el CRM como nurturing, no como perdido.']},
+    end:{badge:'En nurturing · puerta abierta', c:'red', actions:[{label:'Empezar otra llamada', go:'start'}]}
+  }
 };
 
-// ── RENDER ──
-const STEP_ORDER=['apertura','equipo','prioridad','stack','cloud','costes','friccion','deploy','incidentes','dependencia','escalado','clave','historia','transicion','cierre'];
+const PHASE_TOTAL = 4;
 
-function render(sid){
-  const step=FLOW[sid];
-  if(!step)return;
-  S.step=sid;
-  const idx=STEP_ORDER.indexOf(sid);
-  const pct=idx<0?90:Math.round(((idx+1)/STEP_ORDER.length)*100);
-  document.getElementById('prog').style.width=pct+'%';
-  document.getElementById('stepNum').textContent=step.num;
-  document.getElementById('stepCat').textContent=step.cat;
+const OBJECTIONS = [
+  {group:'Comunes a ambos productos', items:[
+    {q:'"Ya tenemos a alguien que lleva esto"', accent:'blue',
+     r:'"Perfecto. La mayoría de equipos también tienen a alguien — el problema no es que nadie lo lleve, es que esa persona vive apagando fuegos sin tiempo de optimizar ni documentar. ¿Esa persona hace trabajo de fondo o de mesa de ayuda?"',
+     f:'No reemplazamos a nadie — liberamos a esa persona para lo que de verdad aporta.'},
+    {q:'"No tenemos presupuesto ahora"', accent:'green',
+     r:'"Lo entiendo, por eso llamo. El coste de no tenerlo bien suele ser mayor: factura que crece, horas de sénior perdidas, devs frenados. ¿Y si en 15 min te enseño dónde estáis perdiendo dinero ahora, y luego decides?"',
+     f:'La sesión no cuesta nada. Lo único que arriesgas son 15 minutos.'},
+    {q:'"Mándame la info por email"', accent:'amber',
+     r:'"Claro, pero un PDF genérico acaba en la papelera y no te culparía. Para mandarte algo útil: ¿qué te aprieta más — costes, equipo frenado o incidencias?"',
+     f:'Con eso te preparo algo concreto, o lo vemos juntos 15 min y te ahorro la lectura.'},
+    {q:'"No es el momento / estamos liados"', accent:'red',
+     r:'"Lo pillo, y justo cuando más liados estáis es cuando el cuello de botella hace más daño. No te pido resolverlo hoy. ¿Reservamos 15 min la semana que viene, sin compromiso?"',
+     f:'¿Cuándo suele ser mejor época? Te escribo justo entonces.'}
+  ]},
+  {group:'Específicas del DevOps Agent', items:[
+    {q:'"¿Un agente con acceso a producción? Me da miedo"', accent:'purple',
+     r:'"Es la duda correcta. El agente no va suelto: las acciones sensibles requieren aprobación, todo queda auditado y tú defines qué hace solo y qué escala a una persona. ¿Qué acción te preocuparía más que hiciera sin permiso?"',
+     f:'Empezamos por lo rutinario y de bajo riesgo, y amplías el alcance a tu ritmo.'},
+    {q:'"Mis devs no van a hablarle a un chat"', accent:'teal',
+     r:'"Lo entiendo. Pero hoy ya \'hablan\': abren tickets y esperan. Esto es lo mismo, pero les responde al momento y sin cola. ¿Qué prefieren tus devs: rellenar un formulario y esperar, o pedirlo y tenerlo?"',
+     f:'La adopción suele ser rápida porque les quita fricción, no se la añade.'},
+    {q:'"¿Por qué vosotros y no AWS / una herramienta directa?"', accent:'ink',
+     r:'"Buena pregunta. Las piezas existen, pero alguien tiene que montarlas, conectarlas a vuestro CI, cloud y monitoring, y mantenerlas. Eso hacemos, gestionado. ¿Preferís montároslo y mantenerlo vosotros, o que os lo dejemos funcionando?"',
+     f:'Y muchas veces el coste se compensa con lo que ahorramos en factura y horas de equipo.'}
+  ]}
+];
 
-  let html=`<div class="q-card">
-    <div class="q-meta"><span class="q-badge">paso ${step.num}</span><span class="q-cat">${step.cat}</span></div>
-    <span class="say-label">// di esto</span>
-    <div class="say-text">"${step.say}"</div>`;
-  if(step.cta) html+=`<div style="margin-top:12px;"><span class="say-label">// cta inicial</span><div style="font-size:14px;font-weight:500;color:var(--soft);font-style:italic;">${step.cta}</div></div>`;
-  html+=`<div style="margin-top:14px;"><span class="resp-label">// escucha esto</span><div class="q-hint">${step.hint}</div></div></div>`;
-  html+=`<div class="answers-label">Respuesta del cliente — selecciona lo que más se parezca</div><div class="answers" id="ans"></div>`;
-  if(step.num!=='—') html+=`<button class="skip-btn" onclick="skipStep()">↓ Saltar esta pregunta / el cliente desvía el tema</button>`;
+// ---- STATE ----
+let current = 'start';
+let history = []; // {crumb, dot}
 
-  document.getElementById('center').innerHTML=html;
+const stage = document.getElementById('stage');
+const trail = document.getElementById('trail');
+const rail = document.getElementById('rail');
 
-  const ac=document.getElementById('ans');
-  step.answers.forEach(a=>{
-    const b=document.createElement('button');
-    b.className=`answer-btn ${a.color||''}`;
-    b.innerHTML=`
-      <div class="a-icon">${a.icon}</div>
-      <div class="a-body">
-        ${a.signal?`<div class="a-signal">señal: "${a.signal}"</div>`:''}
-        <div class="a-main">${a.main}</div>
-        ${a.reply?`<div class="a-reply">Tú: "${a.reply}"</div>`:''}
-        ${a.redirect?`<div class="a-redirect">↩ ${a.redirect}</div>`:''}
-      </div>
-      <div class="a-arr">→</div>`;
-    b.onclick=()=>pick(sid,a);
-    ac.appendChild(b);
-  });
+function dotColor(name){ return ACCENT[name] ? ACCENT[name].solid : 'var(--mute)'; }
 
-  window.scrollTo({top:0,behavior:'smooth'});
-  updateCrumbs(sid,step);
-  updateMobHist(sid,step);
+function renderRail(phase){
+  rail.innerHTML = '';
+  for(let i=1;i<=PHASE_TOTAL;i++){
+    const seg = document.createElement('div');
+    seg.className = 'seg' + (i<phase?' done':i===phase?' active':'');
+    rail.appendChild(seg);
+  }
 }
 
-function skipStep(){
-  // find next step in order
-  const idx=STEP_ORDER.indexOf(S.step);
-  const next=STEP_ORDER[idx+1];
-  if(next) render(next);
-}
-
-function pick(sid,a){
-  const step=FLOW[sid];
-  S.history.push({sid,step,ans:a});
-  if(a.sigs) Object.keys(a.sigs).forEach(k=>{if(a.sigs[k])S.sigs[k]=true;});
-  if(a.icp)  Object.keys(a.icp).forEach(k=>{if(a.icp[k]!==undefined)S.icp[k]=Math.max(S.icp[k],a.icp[k]);});
-  updateSigs();updateICP();updateCrumbs(sid,step,a);updateMobHist(sid,step,a);
-  if(a.outcome) showOutcome(a.outcome);
-  else if(a.next) render(a.next);
-  else showSmartOutcome();
-}
-
-function showOutcome(id){id==='demo'?showSmartOutcome():(renderOutcome(OUTCOMES[id]||getPainOutcome()));}
-function showSmartOutcome(){renderOutcome(getPainOutcome());}
-
-function renderOutcome(d){
-  document.getElementById('prog').style.width='100%';
-  document.getElementById('stepNum').textContent='✓';
-  document.getElementById('stepCat').textContent='Resultado';
-  window.scrollTo({top:0,behavior:'smooth'});
-
-  // Build summary rows from history
-  const sRows=S.history.filter(h=>h.ans.main&&h.ans.main.length>2).slice(-6).map(h=>`<div class="oc-summary-row"><span class="oc-summary-key">${h.step.label}</span><span class="oc-summary-val">${h.ans.main}</span></div>`).join('');
-
-  document.getElementById('center').innerHTML=`
-    <div class="outcome-card ${d.type}">
-      <span class="oc-badge" style="${d.badgeStyle}">${d.badge}</span>
-      <div class="oc-title">${d.title}</div>
-      <div class="oc-desc">${d.desc}</div>
-      <div class="oc-items">${d.items.map(i=>`<span class="oc-item" style="${d.iStyle}">${i}</span>`).join('')}</div>
-      <div class="oc-script"><span class="oc-script-label">// script de cierre</span><div class="oc-script-text">"${d.script}"</div></div>
-      ${sRows?`<div class="oc-summary"><span class="oc-summary-title">// resumen de la llamada</span>${sRows}</div>`:''}
-      <div class="oc-actions">
-        <button class="btn-primary" onclick="restart()">↺ Nueva llamada</button>
-        <button class="btn-copy" onclick="copyResumen()">📋 Copiar resumen</button>
-        <button class="btn-secondary" onclick="window.print()">🖨 Imprimir</button>
-      </div>
-    </div>`;
-}
-
-function copyResumen(){
-  const notes=document.getElementById('notes')?.value||document.getElementById('mnotes')?.value||'';
-  const sigs=Object.keys(S.sigs).filter(k=>S.sigs[k]).map(k=>k).join(', ')||'ninguna';
-  const hist=S.history.map(h=>`• ${h.step.label}: ${h.ans.main}${h.ans.reply?' → Tú: '+h.ans.reply.replace(/"/g,''):''}${h.ans.redirect?' // '+h.ans.redirect.replace('→ ',''):''}`).join('\n');
-  const pain=S.sigs.obs?'Observability Agent':S.sigs.cost?'Cost Agent':S.sigs.dev?'Developer Agent':'—';
-  const txt=`RESIZES — DISCOVERY CALL\n${'─'.repeat(40)}\n\nSeñales detectadas: ${sigs}\nDemo recomendada: ${pain}\n\nResumen de respuestas:\n${hist}\n\nNotas:\n${notes||'(sin notas)'}`;
-  navigator.clipboard?.writeText(txt).then(()=>{
-    const t=document.getElementById('toast');
-    t.classList.add('show');
-    setTimeout(()=>t.classList.remove('show'),2500);
-  }).catch(()=>{
-    const t=document.getElementById('toast');
-    t.textContent='Error al copiar — intenta manualmente';
-    t.classList.add('show');
-    setTimeout(()=>t.classList.remove('show'),2500);
+function renderTrail(){
+  trail.innerHTML = '';
+  history.forEach(h=>{
+    const c = document.createElement('div');
+    c.className = 'crumb';
+    c.innerHTML = `<span class="chip" style="background:${ACCENT[h.dot]?ACCENT[h.dot].bg:'var(--paper)'};color:${ACCENT[h.dot]?ACCENT[h.dot].fg:'var(--mute)'}">lead</span><span class="said"><b>${h.crumb}</b></span>`;
+    trail.appendChild(c);
   });
 }
 
-function updateSigs(){
-  let n=0;
-  Object.keys(S.sigs).forEach(k=>{
-    ['sig-','msig-'].forEach(p=>{const el=document.getElementById(p+k);if(el)el.classList.toggle('active',S.sigs[k]);});
-    if(S.sigs[k])n++;
-  });
-  const sc=document.getElementById('sheetCount');if(sc)sc.textContent=n;
+function go(id, crumb, dot){
+  if(crumb){ history.push({crumb, dot:dot||'ink'}); }
+  if(id==='start'){ history=[]; }
+  current = id;
+  render();
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
-function updateICP(){
-  ['stack','cloud','deploy','urgency'].forEach(k=>{
-    const v=S.icp[k]||0;
-    const c=v>=70?'var(--green)':v>=40?'var(--yellow)':v>0?'var(--red)':'var(--muted)';
-    const l=v>0?(v>=70?'↑ alto':v>=40?'~ medio':'↓ bajo'):'—';
-    ['','m'].forEach(p=>{
-      const b=document.getElementById(p+'b'+k);const vl=document.getElementById(p+'v'+k);
-      if(b){b.style.width=v+'%';b.style.background=c;}if(vl)vl.textContent=l;
+function render(){
+  const n = NODES[current];
+  renderRail(n.phase);
+  renderTrail();
+
+  const acc = ACCENT[n.phaseColor]||ACCENT.ink;
+  let html = `<div class="card"><div class="top">
+    <span class="phase-no" style="background:${acc.solid}">${n.phase}</span>
+    <span class="phase-name">${n.phaseName}</span>
+    <span class="phase-meta">${n.phaseMeta||''}</span>
+  </div><div class="body">`;
+
+  if(n.objective){
+    const oa = ACCENT[n.objective.c]||ACCENT.ink;
+    html += `<div class="objective" style="color:${oa.fg}">${n.objective.t}</div>`;
+  }
+
+  if(n.say){ html += `<div class="say">${n.say}</div>`; }
+  if(n.ask){ html += `<div class="prompt-q"><span class="quote">${n.ask}</span></div>`; }
+  if(n.sub){ html += `<div class="sub">${n.sub}</div>`; }
+
+  if(n.coach){
+    const ca = ACCENT[n.coach.c]||ACCENT.ink;
+    html += `<div class="coach" style="background:${ca.bg};color:${ca.fg}"><div class="tit">${n.coach.tit}</div><ul>`;
+    n.coach.items.forEach(it=>html+=`<li>${it}</li>`);
+    html += `</ul></div>`;
+  }
+
+  if(n.answers){
+    html += `<div class="listen">${n.listen?'Lo que dice el lead':'Elige el camino'}</div><div class="answers">`;
+    n.answers.forEach((a,i)=>{
+      html += `<button class="ans" data-i="${i}">
+        <span class="dot" style="background:${dotColor(a.dot)}"></span>
+        <span class="txt"><span class="label">${a.label}</span><span class="hint">${a.hint}</span></span>
+        <span class="arrow">→</span></button>`;
+    });
+    html += `</div>`;
+  }
+
+  if(n.end){
+    const ea = ACCENT[n.end.c]||ACCENT.ink;
+    html += `<div class="outcome-badge" style="background:${ea.bg};color:${ea.fg}">${n.end.badge}</div>`;
+    html += `<div class="actions">`;
+    n.end.actions.forEach((a,i)=>{
+      html += `<button class="btn ${i===0?'primary':'ghost'}" data-end="${i}">${a.label}</button>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div></div>`;
+  stage.innerHTML = html;
+
+  // wire answers
+  stage.querySelectorAll('.ans').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const a = n.answers[+btn.dataset.i];
+      go(a.go, a.crumb, a.dot);
+    });
+  });
+  stage.querySelectorAll('[data-end]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const a = n.end.actions[+btn.dataset.end];
+      go(a.go);
     });
   });
 }
 
-function updateCrumbs(sid,step,ans){
-  const el=document.getElementById('crumbs');if(!el)return;el.innerHTML='';
-  S.history.forEach(h=>{
-    const d=document.createElement('div');d.className='crumb done';
-    d.innerHTML=`<div><div class="crumb-step">${h.step.num}</div><div class="crumb-label">${h.step.label}</div><div class="crumb-answer">${h.ans.main}</div></div>`;
-    el.appendChild(d);
+// ---- objections sheet ----
+const sheet = document.getElementById('sheet');
+const sheetBg = document.getElementById('sheetBg');
+function buildObjections(){
+  const body = document.getElementById('objBody');
+  let h = '';
+  OBJECTIONS.forEach(g=>{
+    h += `<div class="obj-group-tit">${g.group}</div>`;
+    g.items.forEach(o=>{
+      const a = ACCENT[o.accent]||ACCENT.ink;
+      h += `<div class="obj" style="border-left-color:${a.solid}">
+        <div class="q">${o.q}</div>
+        <div class="r">${o.r}</div>
+        <div class="f"><b>Y si insisten:</b> ${o.f}</div></div>`;
+    });
   });
-  const a=document.createElement('div');a.className='crumb active';
-  a.innerHTML=`<div><div class="crumb-step">${step.num}</div><div class="crumb-label">${step.label}</div></div>`;
-  el.appendChild(a);
+  body.innerHTML = h;
 }
+function openSheet(){ sheet.classList.add('open'); sheetBg.classList.add('open'); }
+function closeSheet(){ sheet.classList.remove('open'); sheetBg.classList.remove('open'); }
+document.getElementById('objFab').addEventListener('click', openSheet);
+sheetBg.addEventListener('click', closeSheet);
 
-function updateMobHist(sid,step,ans){
-  const el=document.getElementById('mobHist');if(!el)return;el.innerHTML='';
-  S.history.forEach(h=>{
-    const d=document.createElement('div');d.className='mcrumb done';
-    d.innerHTML=`<div class="mcdot"></div><span class="mclabel">${h.step.label}</span><span class="mcans">· ${h.ans.main.substring(0,22)}${h.ans.main.length>22?'…':''}</span>`;
-    el.appendChild(d);
-  });
-  const cur=document.createElement('div');cur.className='mcrumb active';
-  cur.innerHTML=`<div class="mcdot"></div><span class="mclabel">${step.label}</span>`;
-  el.appendChild(cur);
-  el.scrollLeft=el.scrollWidth;
-}
+document.getElementById('resetBtn').addEventListener('click', ()=>go('start'));
 
-function restart(){
-  S.step='apertura';S.history=[];
-  S.sigs={cost:false,obs:false,dev:false,aws:false,dep:false,nodev:false};
-  S.icp={stack:0,cloud:0,deploy:0,urgency:0};
-  updateSigs();updateICP();
-  const c=document.getElementById('crumbs');if(c)c.innerHTML='';
-  const m=document.getElementById('mobHist');if(m)m.innerHTML='';
-  const n=document.getElementById('notes');if(n)n.value='';
-  const mn=document.getElementById('mnotes');if(mn)mn.value='';
-  closeSheet();
-  render('apertura');
-}
-
-render('apertura');
+buildObjections();
+render();
 </script>
 </body>
 </html>
